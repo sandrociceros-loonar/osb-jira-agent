@@ -1,0 +1,13 @@
+environment         = "dev"
+location            = "eastus2"
+resource_group_name = "rg-osb-jira-agent-dev"
+prefix              = "osbjira"
+jira_instance_url   = "https://your-company.atlassian.net"
+jira_project_key    = "ITSM"
+jira_webhook_secret = "super-secret-random-token-here"
+
+tags = {
+  Project     = "OSB-Jira-Agent"
+  Environment = "dev"
+  ManagedBy   = "Terraform"
+}
