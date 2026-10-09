@@ -1,0 +1,16 @@
+.git/
+.venv/
+.pytest_cache/
+.ruff_cache/
+.azure/
+.foundry/
+.vscode/
+terraform/
+tests/
+Jira OSB - Agente IA/
+.env
+.env.*
+local.settings.json
+*.tfstate
+*.tfstate.*
+crash.*.log

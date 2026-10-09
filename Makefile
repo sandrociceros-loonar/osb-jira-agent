@@ -1,4 +1,4 @@
-.PHONY: help install test lint format requirements run tf-init tf-plan tf-apply clean
+.PHONY: help install test lint format requirements run run-ollama tf-init tf-plan tf-apply clean
 
 help:
 	@echo "OSB Jira Agent - Comandos de Automação:"
@@ -8,6 +8,7 @@ help:
 	@echo "  make format        - Formata o código com ruff"
 	@echo "  make requirements  - Gera requirements.txt para o Azure Functions"
 	@echo "  make run           - Inicia a Azure Function localmente (func start)"
+	@echo "  make run-ollama    - Inicia localmente usando o modelo Ollama qwen3:4b"
 	@echo "  make tf-init       - Inicializa os módulos Terraform"
 	@echo "  make tf-plan       - Executa terraform plan"
 	@echo "  make tf-apply      - Executa terraform apply"
@@ -32,6 +33,10 @@ requirements:
 
 run:
 	func start
+
+run-ollama:
+	MODEL_PROVIDER=ollama OLLAMA_MODEL_NAME="$${OLLAMA_MODEL_NAME:-qwen3:4b}" \
+		OLLAMA_BASE_URL="$${OLLAMA_BASE_URL:-http://127.0.0.1:11434/v1}" func start
 
 tf-init:
 	terraform -chdir=terraform init

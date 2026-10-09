@@ -2,7 +2,20 @@
 
 import pytest
 
+from src import config as config_module
+from src.agent import foundry_client as foundry_client_module
 from src.config import Settings
+
+
+@pytest.fixture(autouse=True)
+def reset_global_singletons(monkeypatch):
+    """Isola estado global e provider padrão entre testes."""
+    monkeypatch.setenv("MODEL_PROVIDER", "azure")
+    config_module._settings = None
+    foundry_client_module._manager_instance = None
+    yield
+    config_module._settings = None
+    foundry_client_module._manager_instance = None
 
 
 @pytest.fixture

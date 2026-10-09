@@ -8,8 +8,11 @@ on:
 
 jobs:
   lint-and-test:
-    name: Lint & Test (Python 3.11)
+    name: Lint & Test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -21,7 +24,7 @@ jobs:
           enable-cache: true
 
       - name: Set up Python
-        run: uv python install 3.11
+        run: uv python install ${{ matrix.python-version }}
 
       - name: Install Dependencies
         run: |

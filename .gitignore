@@ -57,7 +57,12 @@ override.tf.json
 terraform.rc
 
 # IDE
-.vscode/
+
 .idea/
 *.swp
 *.swo
+
+.python_packages
+
+# Coleção Bruno com credenciais
+Jira OSB - Agente IA/

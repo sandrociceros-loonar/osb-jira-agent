@@ -17,3 +17,8 @@ output "secret_jira_webhook_name" {
   description = "Nome do segredo do webhook no Key Vault"
   value       = azurerm_key_vault_secret.jira_webhook_secret.name
 }
+
+output "secret_jira_api_token_name" {
+  description = "Nome do segredo do token de API Jira no Key Vault"
+  value       = var.jira_api_token == "" ? "" : azurerm_key_vault_secret.jira_api_token[0].name
+}

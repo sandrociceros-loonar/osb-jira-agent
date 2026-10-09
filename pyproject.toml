@@ -1,16 +1,20 @@
 [project]
 name = "osb-jira-agent"
 version = "0.1.0"
-description = "AI Agent on Microsoft Azure AI Foundry integrated with Jira Service Management for operational triage and automation"
+description = "AI Agent on Microsoft Azure AI Foundry for Jira commercial CRM leads, proposals, and Assets workflows"
 readme = "README.md"
-requires-python = ">=3.11,<3.13"
+requires-python = ">=3.11,<3.14"
 dependencies = [
-    "azure-ai-projects>=1.0.0b1",
+    "azure-ai-agentserver-invocations>=1.1.0,<2.0.0",
+    "azure-ai-projects>=2.8.0",
     "azure-identity>=1.19.0",
     "azure-functions>=1.21.0",
+    "debugpy>=1.8.0",
+    "openai>=1.0.0",
     "pydantic>=2.10.0",
     "pydantic-settings>=2.7.0",
     "httpx>=0.28.0",
+    "starlette>=0.46.0",
 ]
 
 [project.optional-dependencies]
@@ -19,6 +23,9 @@ dev = [
     "pytest-mock>=3.14.0",
     "pytest-asyncio>=0.24.0",
     "ruff>=0.8.0",
+]
+local-model = [
+    "foundry-local-sdk>=2.1.0",
 ]
 
 [build-system]
@@ -41,3 +48,8 @@ minversion = "8.0"
 testpaths = ["tests"]
 pythonpath = ["src"]
 addopts = "-ra -q --import-mode=importlib"
+
+[dependency-groups]
+dev = [
+    "agent-dev-cli>=0.0.1b260427",
+]

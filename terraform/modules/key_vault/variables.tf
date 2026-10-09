@@ -20,6 +20,13 @@ variable "jira_webhook_secret" {
   default     = "change-me-in-production"
 }
 
+variable "jira_api_token" {
+  description = "Token opcional de API Atlassian para o conector Jira"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
 variable "tags" {
   description = "Tags para governança de recursos"
   type        = map(string)

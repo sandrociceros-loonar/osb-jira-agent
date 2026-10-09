@@ -6,8 +6,13 @@ from pydantic import BaseModel, Field
 
 
 class TriageCategory(StrEnum):
-    """Categorias operacionais comuns de ITSM."""
+    """Categorias de CRM comercial, mantendo os valores ITSM legados válidos."""
 
+    LEAD = "Lead"
+    PROPOSAL = "Proposta"
+    PROPOSAL_ITEM = "Item da proposta"
+    COMMERCIAL_QUERY = "Consulta comercial"
+    PRODUCT_PURCHASING = "Produto/Compras"
     INFRASTRUCTURE = "Infrastructure & Cloud"
     ACCESS_MANAGEMENT = "Access & Permissions"
     SOFTWARE_BUG = "Software Bug"
@@ -27,23 +32,31 @@ class TriagePriority(StrEnum):
 
 
 class TriageDecision(BaseModel):
-    """Decisão estruturada emitida pelo Agente do Foundry."""
+    """Resumo estruturado de uma interação do agente com uma issue Jira."""
 
-    category: TriageCategory = Field(description="Categoria atribuída ao chamado")
-    priority: TriagePriority = Field(description="Prioridade calculada para o chamado")
-    assigned_team: str = Field(description="Equipe ou fila sugerida/atribuída")
+    category: TriageCategory = Field(description="Categoria comercial da issue ou da solicitação")
+    priority: TriagePriority | None = Field(
+        default=None,
+        description="Prioridade Jira; null para não alterar a prioridade",
+    )
+    assigned_team: str | None = Field(
+        default=None,
+        description="Equipe Jira; null para não alterar a atribuição",
+    )
     suggested_status: str | None = Field(
         default=None,
-        description="Status para transição (ex: 'In Progress', 'Waiting for Customer', 'Resolved')",
+        description="Status Jira opcional; null quando nenhuma transição genérica deve ocorrer",
     )
     should_auto_close: bool = Field(
         default=False,
-        description="Indica se o chamado foi resolvido e deve ser fechado automaticamente",
+        description="Indica se a issue deve ser encerrada automaticamente",
     )
-    reasoning: str = Field(description="Justificativa da triagem baseada no conteúdo do chamado")
+    reasoning: str = Field(
+        description="Resumo do pedido e da ação comercial baseada nos dados disponíveis"
+    )
     internal_comment: str | None = Field(
         default=None,
-        description="Comentário interno a ser registrado na issue do Jira",
+        description="Comentário interno solicitado explicitamente para a issue",
     )
 
 
