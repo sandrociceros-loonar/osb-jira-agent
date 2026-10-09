@@ -33,6 +33,7 @@ def test_jira_webhook_unauthorized(monkeypatch):
     """Testa rejeição com 401 quando o segredo não confere."""
     monkeypatch.setenv("JIRA_WEBHOOK_SECRET", "expected-secret")
     monkeypatch.setenv("ENVIRONMENT", "production")
+    monkeypatch.setattr("src.config._settings", None)
 
     req = func.HttpRequest(
         method="POST",
@@ -55,7 +56,7 @@ def test_jira_webhook_invalid_json():
         url="/api/jira-webhook",
         headers={"X-Atlassian-Webhook-Secret": "test-secret-12345"},
     )
-    with patch("src.function_app.verify_jira_webhook", return_value=True):
+    with patch("src.webhook_handler.verify_jira_webhook", return_value=True):
         resp = jira_webhook_trigger(req)
     assert resp.status_code == 400
 
@@ -76,7 +77,7 @@ def test_jira_webhook_ignored_event():
         url="/api/jira-webhook",
         headers={"X-Atlassian-Webhook-Secret": "test-secret-12345"},
     )
-    with patch("src.function_app.verify_jira_webhook", return_value=True):
+    with patch("src.webhook_handler.verify_jira_webhook", return_value=True):
         resp = jira_webhook_trigger(req)
 
     assert resp.status_code == 200
@@ -108,7 +109,7 @@ def test_jira_webhook_successful_triage(sample_outage_webhook_payload):
         actions_taken=["Atribuído à Cloud-Platform"],
     )
 
-    with patch("src.function_app.verify_jira_webhook", return_value=True):
+    with patch("src.webhook_handler.verify_jira_webhook", return_value=True):
         with patch.object(JiraTriageAgent, "process_ticket", return_value=mock_result):
             resp = jira_webhook_trigger(req)
 

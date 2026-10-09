@@ -23,3 +23,10 @@ resource "azurerm_key_vault_secret" "jira_webhook_secret" {
   value        = var.jira_webhook_secret
   key_vault_id = azurerm_key_vault.kv.id
 }
+
+resource "azurerm_key_vault_secret" "jira_api_token" {
+  count        = var.jira_api_token == "" ? 0 : 1
+  name         = "jira-api-token"
+  value        = var.jira_api_token
+  key_vault_id = azurerm_key_vault.kv.id
+}
