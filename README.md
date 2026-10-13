@@ -240,7 +240,8 @@ Variáveis chave em `.env` / `local.settings.json`:
 - `JIRA_ENABLE_WRITE_OPERATIONS`: habilita explicitamente criação, comentários, transições e write-back.
 - `CONFLUENCE_SPACE_URL`: URL completa do espaço Confluence da base de conhecimento (sem valor padrão; configure para sua instância).
 - `CONFLUENCE_SPACE_KEY`: Chave do espaço Confluence (sem valor padrão; configure para seu espaço).
-- `CONFLUENCE_WEBHOOK_SECRET`: Segredo compartilhado para validação do webhook do Confluence.
+- `CONFLUENCE_WEBHOOK_SECRET`: Token compartilhado exigido pelo endpoint do webhook do Confluence.
+- `CONFLUENCE_WEBHOOK_SECRET_HEADER`: Nome do cabeçalho com o token (padrão `X-Atlassian-Webhook-Secret`).
 - `JIRA_REQUEST_DETAILS_FIELD_ID`: ID opcional do campo Jira para "Detalhes da Solicitação".
 - `KB_CACHE_DIR`: Diretório para persistência do cache RAG (padrão `.cache/kb`).
 - `KB_CACHE_TTL_SECONDS`: TTL do cache da base de conhecimento em segundos (padrão `3600`).
@@ -354,12 +355,50 @@ recepção (no campo `Detalhes da Solicitação` ou descrição) e quando o lead
    - Quando o cache está em processo de atualização/sincronização (`is_updating`), qualquer consulta à ferramenta `query_knowledge_base` aciona automaticamente o fallback direto via Confluence CQL (`search_space_direct`), garantindo disponibilidade contínua sem respostas desatualizadas.
 
 4. **Atualização via Webhook**:
-   - O endpoint `/api/confluence-webhook` (POST) recebe eventos do Confluence (`page_created`, `page_updated`, etc.) e dispara a atualização assíncrona do cache da base de conhecimento.
-   - O endpoint `/api/kb-refresh` (GET/POST) permite sincronização manual sob demanda.
+   - Configure o webhook como descrito em [Configurar o webhook do Confluence](#configurar-o-webhook-do-confluence).
+   - Cada evento aceito dispara uma sincronização completa do cache da base de conhecimento; não é uma atualização incremental.
 
 5. **Escalação para Grupo de Humanos**:
    - Caso a base de conhecimento não contenha resposta com similaridade suficiente (abaixo de `KB_MIN_CONFIDENCE_SCORE`), o agente aciona `escalate_to_human_group`.
    - O lead é transferido para a equipe humana configurada (`KB_HUMAN_ESCALATION_TEAM`, `KB_HUMAN_ESCALATION_GROUP_ACCOUNT_ID`, `KB_HUMAN_ESCALATION_TRANSITION_ID`), com registro de nota interna detalhando o motivo e mensagem pública cordial ao cliente informando o encaminhamento a um consultor.
+
+#### Configurar o webhook do Confluence
+
+O endpoint `POST /api/confluence-webhook` deve ser acessível por HTTPS pela automação do Confluence.
+Em Azure Functions, use `https://<nome-da-function-app>.azurewebsites.net/api/confluence-webhook`.
+Em desenvolvimento local, o endpoint não é acessível pelo Confluence sem um túnel HTTPS público; prefira
+testá-lo em uma Function de desenvolvimento publicada.
+
+1. Gere um token aleatório forte e configure-o como `CONFLUENCE_WEBHOOK_SECRET`:
+   - localmente, em `.env` ou `local.settings.json`;
+   - na Azure Function publicada, em **Settings / Environment variables / App settings**. O
+     Terraform deste repositório não configura esse valor; defina-o diretamente na Function App e
+     não o coloque em `terraform.tfvars`, no código ou em arquivos versionados.
+2. Na mesma configuração, defina `CONFLUENCE_WEBHOOK_SECRET_HEADER` como
+   `X-Atlassian-Webhook-Secret` (o padrão) ou escolha outro nome de cabeçalho. O nome precisa ser
+   exatamente o mesmo usado na regra do Confluence. Em produção, sem `CONFLUENCE_WEBHOOK_SECRET`
+   configurado, o endpoint rejeita a requisição.
+3. No Confluence Cloud, crie uma regra de automação no espaço da base de conhecimento:
+   - escolha o gatilho de publicação da página (para novas páginas e republicações/alterações);
+   - adicione a ação **Send web request**;
+   - use o método `POST` e a URL HTTPS da Function acima;
+   - adicione um cabeçalho com o nome configurado no passo 2 e o token do passo 1 como valor;
+   - envie um corpo JSON válido, por exemplo `{}`; o endpoint também usa a chave do espaço no corpo,
+     quando fornecida, para ignorar eventos de outros espaços.
+4. Salve e habilite a regra. Publique ou altere uma página do espaço e confira o resultado da regra
+   no log de auditoria do Confluence e os logs da Function. Uma resposta `200` indica que o evento
+   foi aceito; um evento de outro espaço pode retornar `200` com estado `ignored`. `401` indica
+   cabeçalho ausente/incorreto ou segredo não configurado; `500` indica falha de sincronização.
+
+O endpoint da Function usa autenticação HTTP anônima do Azure Functions e protege o recebimento com
+esse token compartilhado; portanto, não é necessário acrescentar uma Function Key à URL. Restrinja
+o acesso às configurações que guardam o token e mantenha o mesmo valor somente na Function e na
+regra de automação. Essa integração espera um cabeçalho estático com o token configurado; ela não
+valida JWT de aplicativos Atlassian Connect nem assinaturas HMAC de webhooks nativos.
+
+Consulte também a documentação da Atlassian sobre
+[automação do Confluence](https://support.atlassian.com/confluence-cloud/docs/what-is-confluence-automation/)
+e a ação [Send web request](https://support.atlassian.com/cloud-automation/docs/).
 
 `JIRA_TRANSITION_IDS` permite substituir os IDs de workflow dos manifestos. Os IDs fornecidos são
 específicos da instância original; confirme-os no workflow de destino. O download de anexos só
