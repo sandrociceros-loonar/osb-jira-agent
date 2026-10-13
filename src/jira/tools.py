@@ -46,16 +46,30 @@ class ProductSearchArguments(ToolArguments):
     workspace_id: str | None = Field(default=None, min_length=1, max_length=100)
 
 
+class SoftwareSearchArguments(ToolArguments):
+    software_name: str = Field(min_length=1, max_length=255)
+    workspace_id: str | None = Field(default=None, min_length=1, max_length=100)
+
+
+class UpdateManufacturerArguments(IssueKeyArguments):
+    manufacturer_name: str = Field(min_length=1, max_length=255)
+    manufacturer_object_id: str | None = Field(
+        default=None,
+        pattern=r"^\d+$",
+        max_length=100,
+    )
+
+
 class ProposalArguments(IssueKeyArguments):
-    forecast_date: date | None = None
-    probability: str | None = Field(default=None, max_length=100)
-    next_follow_up_date: date | None = None
-    priority: str | None = Field(default=None, max_length=100)
-    billing: str | None = Field(default=None, max_length=255)
-    payment_days: str | None = Field(default=None, max_length=100)
-    payment_method: str | None = Field(default=None, max_length=100)
-    proposal_valid_until: date | None = None
-    proposal_information: str | None = Field(default=None, max_length=4000)
+    forecast_date: date
+    probability: str = Field(min_length=1, max_length=100)
+    next_follow_up_date: date
+    priority: str = Field(min_length=1, max_length=100)
+    billing: str = Field(min_length=1, max_length=255)
+    payment_days: str = Field(min_length=1, max_length=100)
+    payment_method: str = Field(min_length=1, max_length=100)
+    proposal_valid_until: date
+    proposal_information: str = Field(min_length=1, max_length=4000)
 
 
 class PurchasingTransitionArguments(IssueKeyArguments):
@@ -74,6 +88,30 @@ class SetPriceArguments(IssueKeyArguments):
 
 class AddCommentArguments(IssueKeyArguments):
     comment: str = Field(min_length=1, max_length=10000)
+
+
+class KBQueryArguments(ToolArguments):
+    query: str = Field(
+        min_length=2,
+        max_length=500,
+        description="Dúvida apresentada pelo lead a pesquisar na base de conhecimento",
+    )
+
+
+class EscalateHumanArguments(IssueKeyArguments):
+    reason: str = Field(
+        min_length=3,
+        max_length=1000,
+        description="Motivo do encaminhamento do lead para a equipe humana",
+    )
+    missing_data_message: str | None = Field(
+        default=None,
+        max_length=2000,
+        description=(
+            "Texto opcional indicando cordialmente quais dados comerciais faltam para a proposta, "
+            "a ser integrado na mesma mensagem enviada ao lead."
+        ),
+    )
 
 
 @dataclass(frozen=True)
@@ -111,9 +149,15 @@ JIRA_TOOLS: tuple[JiraTool, ...] = (
     ),
     JiraTool(
         "get_lead_details",
-        "Obtém os campos e comentários definidos no manifesto de consulta de lead.",
+        "Obtém os campos e comentários do lead para verificar dados fornecidos pelo solicitante.",
         IssueKeyArguments,
         "get_lead_details",
+    ),
+    JiraTool(
+        "get_latest_issue_comment",
+        "Obtém o comentário mais recente da issue, incluindo autor, data e conteúdo.",
+        IssueKeyArguments,
+        "get_latest_issue_comment",
     ),
     JiraTool(
         "start_lead_work",
@@ -162,6 +206,13 @@ JIRA_TOOLS: tuple[JiraTool, ...] = (
         True,
     ),
     JiraTool(
+        "add_public_comment",
+        "Adiciona uma mensagem comercial pública sobre o lead/proposta, dirigida ao lead ou contato comercial e possivelmente enviada a ele por e-mail pelo Jira — nunca ao operador Jira. Use sempre tom cordial, natural, profissional e conciso; não inclua detalhes técnicos internos, cabeçalho automático, nome da conta Jira nem assinatura. Requer escrita habilitada.",
+        AddCommentArguments,
+        "add_public_comment",
+        True,
+    ),
+    JiraTool(
         "list_assets_schemas",
         "Lista os object schemas do Jira Assets, com paginação opcional.",
         AssetsSchemaListArguments,
@@ -192,6 +243,19 @@ JIRA_TOOLS: tuple[JiraTool, ...] = (
         "search_assets_products_by_manufacturer",
     ),
     JiraTool(
+        "search_assets_products_by_software",
+        "Pesquisa no Jira Assets o software citado no lead para obter produto e fabricante.",
+        SoftwareSearchArguments,
+        "search_assets_products_by_software",
+    ),
+    JiraTool(
+        "update_lead_manufacturer",
+        "Atualiza no lead o campo Fabricante/Manufacturer com dados confirmados pelo Jira Assets. Requer escrita habilitada.",
+        UpdateManufacturerArguments,
+        "update_lead_manufacturer",
+        True,
+    ),
+    JiraTool(
         "send_item_to_purchasing",
         "Preenche os campos de compra e executa a transição do item. Requer escrita habilitada.",
         PurchasingTransitionArguments,
@@ -209,6 +273,20 @@ JIRA_TOOLS: tuple[JiraTool, ...] = (
         "Define preço unitário e cenário provável no item. Requer escrita habilitada.",
         SetPriceArguments,
         "set_proposal_item_price",
+        True,
+    ),
+    JiraTool(
+        "query_knowledge_base",
+        "Pesquisa dúvidas do lead na base de conhecimento do Confluence (com cache RAG e fallback direto em atualização).",
+        KBQueryArguments,
+        "query_knowledge_base",
+        False,
+    ),
+    JiraTool(
+        "escalate_to_human_group",
+        "Encaminha o lead para o grupo de atendimento comercial humano quando a base de conhecimento não contiver resposta suficiente. Requer escrita habilitada.",
+        EscalateHumanArguments,
+        "escalate_to_human_group",
         True,
     ),
 )

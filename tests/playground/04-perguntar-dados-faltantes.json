@@ -1,0 +1,11 @@
+{
+  "webhookEvent": "jira:issue_updated",
+  "issue": {
+    "id": "651204",
+    "key": "OP-8402",
+    "fields": {
+      "summary": "Teste Playground: solicitar dados pendentes",
+      "description": "No sandbox, leia a descrição e todos os comentários de OP-8402, verifique o fabricante no Assets e avalie os nove dados necessários para gerar proposta: forecast, probabilidade, próximo follow-up, prioridade, faturamento, dias para pagamento, forma de pagamento, validade da proposta e informações para a proposta. Publique um comentário público cordial e em tom comercial, dirigido diretamente ao lead/contato comercial (não ao operador do Jira), pedindo apenas os dados que ainda não foram informados nem confirmados. Como o Jira pode enviar o comentário por e-mail, não inclua detalhes internos, cabeçalho automático nem assinatura. Não gere a proposta."
+    }
+  }
+}

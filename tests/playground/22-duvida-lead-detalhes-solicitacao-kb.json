@@ -1,0 +1,26 @@
+{
+  "webhookEvent": "jira:issue_created",
+  "issue": {
+    "id": "651204",
+    "key": "OP-8402",
+    "fields": {
+      "summary": "Novo Lead: Aquisição de licenças com dúvida sobre SLA",
+      "description": "Recebimento de novo lead interessado em licenças de software corporativo. O lead preencheu detalhes no formulário inicial.",
+      "customfield_10010": {
+        "type": "doc",
+        "version": 1,
+        "content": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Gostaria de saber como funciona o suporte e qual o SLA de atendimento para o produto antes de fecharmos a contratação."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "webhookEvent": "jira:issue_comment_created",
+  "issue": {
+    "id": "651204",
+    "key": "OP-8402",
+    "fields": {
+      "summary": "Teste Playground: resposta parcial do solicitante",
+      "description": "Continue a avaliação deste lead usando os campos atuais e todo o histórico de comentários do Jira. Considere a resposta recebida, atualize mentalmente a lista de dados completos e pendentes, e peça publicamente somente as informações ainda ausentes, em tom cordial e comercial diretamente ao lead/contato (não ao operador Jira). Como o Jira pode enviar o comentário por e-mail, não inclua detalhes internos, cabeçalho automático nem assinatura. Não repita perguntas já respondidas e não gere proposta enquanto faltar qualquer dado obrigatório."
+    }
+  },
+  "comment": {
+    "id": "900001",
+    "body": "Para complementar a solicitação: probabilidade de 70%, próximo follow-up em 2026-10-20 e faturamento mensal. Os demais dados ainda serão confirmados.",
+    "author": {
+      "accountId": "qa-requester",
+      "displayName": "Solicitante QA"
+    },
+    "created": "2026-10-12T12:00:00.000+0000"
+  }
+}

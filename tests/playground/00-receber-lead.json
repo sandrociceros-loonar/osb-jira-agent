@@ -1,0 +1,11 @@
+{
+  "webhookEvent": "jira:issue_created",
+  "issue": {
+    "id": "651204",
+    "key": "OP-8402",
+    "fields": {
+      "summary": "Teste Playground: receber e avaliar lead OP-8402",
+      "description": "Cenário somente leitura: avalie este registro comercial recém-recebido. Consulte no Jira o tipo real, a etapa atual, a descrição completa e os comentários; identifique quais dados existem e quais ainda faltam para avaliar o lead. Não publique comentários, não altere campos nem execute transições. Não invente valores."
+    }
+  }
+}

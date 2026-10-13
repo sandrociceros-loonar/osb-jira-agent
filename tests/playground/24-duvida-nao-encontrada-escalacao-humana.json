@@ -1,0 +1,20 @@
+{
+  "webhookEvent": "jira:issue_comment_created",
+  "issue": {
+    "id": "651204",
+    "key": "OP-8402",
+    "fields": {
+      "summary": "Lead com dúvida complexa fora da base de conhecimento",
+      "description": "Lead avaliado, porém faltam os dados de forecast, probabilidade e condições de pagamento."
+    }
+  },
+  "comment": {
+    "id": "900020",
+    "body": "Vocês possuem filial física em Frankfurt para assinatura presencial e auditoria de datacenter local na Alemanha conforme a regulação BaFin?",
+    "author": {
+      "accountId": "lead-contact-456",
+      "displayName": "Contato Comercial Lead"
+    },
+    "created": "2026-10-12T15:00:00.000+0000"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "webhookEvent": "jira:issue_updated",
+  "issue": {
+    "id": "651204",
+    "key": "OP-8402",
+    "fields": {
+      "summary": "Teste Playground: baixar anexo solicitado",
+      "description": "Identifique nos metadados de OP-8402 o anexo cujo nome corresponda exatamente a 'documento de proposta solicitado.pdf'. Baixe somente esse anexo se existir e estiver abaixo do limite configurado. Não baixe outros anexos nem reproduza conteúdo sensível; se não houver correspondência, informe isso."
+    }
+  }
+}

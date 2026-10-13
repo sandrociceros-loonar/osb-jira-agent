@@ -1,0 +1,20 @@
+{
+  "webhookEvent": "jira:issue_comment_created",
+  "issue": {
+    "id": "651204",
+    "key": "OP-8402",
+    "fields": {
+      "summary": "Retorno do especialista humano sobre regulação e auditoria",
+      "description": "Lead OP-8402. Todos os dados comerciais para a proposta já foram confirmados nos comentários anteriores (forecast: 2026-11-01, probabilidade: Alta, follow-up: 2026-10-25, prioridade: Padrão, faturamento: Acme Corp, prazo: 30dd, boleto, validade: 15 dias, 50 licenças)."
+    }
+  },
+  "comment": {
+    "id": "900030",
+    "body": "Nota interna para o atendimento: Confirmamos com o time jurídico e de infraestrutura que atendemos aos requisitos da regulação alemã BaFin por meio de nosso datacenter parceiro em Frankfurt e fornecemos o relatório SOC2 e certificados de compliance digitalmente, sem necessidade de firma presencial.",
+    "author": {
+      "accountId": "specialist-human-789",
+      "displayName": "Carlos - Especialista Comercial"
+    },
+    "created": "2026-10-12T16:00:00.000+0000"
+  }
+}

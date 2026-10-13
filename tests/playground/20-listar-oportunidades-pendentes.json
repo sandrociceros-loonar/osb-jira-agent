@@ -1,0 +1,11 @@
+{
+  "webhookEvent": "jira:issue_updated",
+  "issue": {
+    "id": "651204",
+    "key": "OP-8402",
+    "fields": {
+      "summary": "Teste Playground: listar oportunidades pendentes",
+      "description": "Liste todas as oportunidades pendentes do projeto OP, incluindo chave, empresa, etapa e responsável. Não altere issues."
+    }
+  }
+}

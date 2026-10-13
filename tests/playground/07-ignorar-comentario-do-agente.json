@@ -1,0 +1,20 @@
+{
+  "webhookEvent": "jira:issue_comment_created",
+  "issue": {
+    "id": "651204",
+    "key": "OP-8402",
+    "fields": {
+      "summary": "Teste Playground: evitar loop de comentário automático",
+      "description": "Este cenário valida que um webhook disparado pelo comentário do próprio agente não provoca outra resposta."
+    }
+  },
+  "comment": {
+    "id": "900003",
+    "body": "Loonar - Agente Comercial (resposta automática)\nAguardamos os dados solicitados para continuar a análise.",
+    "author": {
+      "accountId": "configured-agent-account",
+      "displayName": "Loonar - Agente Comercial"
+    },
+    "created": "2026-10-12T12:10:00.000+0000"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "webhookEvent": "jira:issue_updated",
+  "issue": {
+    "id": "651204",
+    "key": "OP-8402",
+    "fields": {
+      "summary": "Teste Playground: listar metadados de anexos",
+      "description": "Liste os metadados de anexos de OP-8402 (nome, tipo, tamanho e data, se disponíveis). Não baixe nem reproduza o conteúdo de nenhum anexo."
+    }
+  }
+}

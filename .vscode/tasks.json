@@ -15,7 +15,7 @@
     {
       "label": "Run Hosted Agent HTTP Server",
       "type": "shell",
-      "command": "${workspaceFolder}/.venv/bin/python -m debugpy --listen 127.0.0.1:5679 -m agentdev run src/hosted_agent/main.py --verbose --port 8088",
+      "command": "${workspaceFolder}/.venv/bin/python -Xfrozen_modules=off -m debugpy --listen 127.0.0.1:5679 -m agentdev run src/hosted_agent/main.py --verbose --port 8088",
       "isBackground": true,
       "options": {
         "cwd": "${workspaceFolder}"

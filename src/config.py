@@ -1,6 +1,7 @@
 """Application Configuration using Pydantic Settings."""
 
 from typing import Literal
+from urllib.parse import urlparse
 
 from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -34,7 +35,7 @@ class Settings(BaseSettings):
         description="String legada do projeto no Azure AI Foundry",
     )
     azure_ai_model_deployment_name: str = Field(
-        default="gpt-4o",
+        default="gpt-5",
         alias="AZURE_AI_MODEL_DEPLOYMENT_NAME",
         description="Nome do deployment do modelo no Azure AI Foundry",
     )
@@ -71,6 +72,12 @@ class Settings(BaseSettings):
         default="",
         alias="JIRA_WEBHOOK_SECRET",
         description="Segredo compartilhado para validação do webhook do Jira",
+        repr=False,
+    )
+    jira_key_vault_url: str = Field(
+        default="",
+        alias="JIRA_KEY_VAULT_URL",
+        description="URI do Azure Key Vault que contém os segredos Jira",
     )
     jira_webhook_secret_header: str = Field(
         default="X-Atlassian-Webhook-Secret",
@@ -157,6 +164,19 @@ class Settings(BaseSettings):
         alias="JIRA_ASSETS_PRODUCT_OBJECT_TYPE_ID",
         description="Object type ID de produtos consultado pela pesquisa AQL",
     )
+    jira_manufacturer_field_id: str = Field(
+        default="",
+        alias="JIRA_MANUFACTURER_FIELD_ID",
+        description=(
+            "ID opcional do campo Jira para gravar o fabricante; "
+            "se vazio, o conector localiza um campo editável chamado Fabricante/Manufacturer"
+        ),
+    )
+    jira_agent_account_id: str = Field(
+        default="",
+        alias="JIRA_AGENT_ACCOUNT_ID",
+        description="Account ID Jira do agente para reconhecer seus próprios comentários",
+    )
     jira_attachment_max_bytes: int = Field(
         default=65536,
         alias="JIRA_ATTACHMENT_MAX_BYTES",
@@ -164,6 +184,103 @@ class Settings(BaseSettings):
         le=1048576,
         description="Limite de bytes para anexos disponibilizados ao modelo",
     )
+
+    # Confluence Knowledge Base & RAG
+    confluence_space_url: str = Field(
+        default="",
+        alias="CONFLUENCE_SPACE_URL",
+        description="URL completa do espaço Confluence da base de conhecimento",
+    )
+    confluence_base_url: str = Field(
+        default="",
+        alias="CONFLUENCE_BASE_URL",
+        description="URL base da API do Confluence Cloud",
+    )
+    confluence_space_key: str = Field(
+        default="",
+        alias="CONFLUENCE_SPACE_KEY",
+        description="Chave do espaço Confluence da base de conhecimento",
+    )
+    confluence_api_email: str = Field(
+        default="",
+        alias="CONFLUENCE_API_EMAIL",
+        description="E-mail da conta Atlassian para Confluence; herda de JIRA_API_EMAIL se vazio",
+    )
+    confluence_api_token: str = Field(
+        default="",
+        alias="CONFLUENCE_API_TOKEN",
+        description="Token de API Confluence; herda de JIRA_API_TOKEN se vazio",
+        repr=False,
+    )
+    confluence_webhook_secret: str = Field(
+        default="",
+        alias="CONFLUENCE_WEBHOOK_SECRET",
+        description="Segredo compartilhado para validação do webhook do Confluence",
+        repr=False,
+    )
+    confluence_webhook_secret_header: str = Field(
+        default="X-Atlassian-Webhook-Secret",
+        alias="CONFLUENCE_WEBHOOK_SECRET_HEADER",
+        description="Nome do cabeçalho contendo o segredo do webhook Confluence",
+    )
+    jira_request_details_field_id: str = Field(
+        default="",
+        alias="JIRA_REQUEST_DETAILS_FIELD_ID",
+        description="ID do campo Jira correspondente a Detalhes da Solicitação",
+    )
+    kb_cache_dir: str = Field(
+        default=".cache/kb",
+        alias="KB_CACHE_DIR",
+        description="Diretório para armazenamento em disco do cache da base de conhecimento",
+    )
+    kb_cache_ttl_seconds: int = Field(
+        default=3600,
+        alias="KB_CACHE_TTL_SECONDS",
+        ge=1,
+        description="TTL do cache da base de conhecimento em segundos",
+    )
+    kb_min_confidence_score: float = Field(
+        default=0.35,
+        alias="KB_MIN_CONFIDENCE_SCORE",
+        ge=0.0,
+        le=1.0,
+        description="Similaridade mínima para validar resposta encontrada na KB",
+    )
+    kb_human_escalation_team: str = Field(
+        default="Equipe Comercial Humana",
+        alias="KB_HUMAN_ESCALATION_TEAM",
+        description="Nome da equipe humana para escalação quando a resposta não for encontrada",
+    )
+    kb_human_escalation_group_account_id: str = Field(
+        default="",
+        alias="KB_HUMAN_ESCALATION_GROUP_ACCOUNT_ID",
+        description="AccountId Jira do grupo ou responsável para escalação humana",
+    )
+    kb_human_escalation_transition_id: str = Field(
+        default="",
+        alias="KB_HUMAN_ESCALATION_TRANSITION_ID",
+        description="ID opcional de transição Jira para mover o lead para atendimento humano",
+    )
+    kb_enabled: bool = Field(
+        default=True,
+        alias="KB_ENABLED",
+        description="Habilita resposta a dúvidas com base de conhecimento Confluence",
+    )
+
+    def model_post_init(self, __context: object) -> None:
+        super().model_post_init(__context)
+        if self.confluence_space_url:
+            parsed = urlparse(self.confluence_space_url)
+            if "/spaces/" in parsed.path:
+                parts = parsed.path.strip("/").split("/")
+                try:
+                    idx = parts.index("spaces")
+                    if idx + 1 < len(parts) and parts[idx + 1]:
+                        self.confluence_space_key = parts[idx + 1]
+                except ValueError:
+                    pass
+                wiki_part = parsed.path[: parsed.path.find("/spaces")].rstrip("/")
+                self.confluence_base_url = f"{parsed.scheme}://{parsed.netloc}{wiki_part}"
 
     # Runtime
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")

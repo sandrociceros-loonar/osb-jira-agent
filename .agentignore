@@ -5,12 +5,19 @@
 .azure/
 .foundry/
 .vscode/
+.agents/
+.agent_configs/
 terraform/
 tests/
+datasets/
+evaluators/
 Jira OSB - Agente IA/
 .env
 .env.*
 local.settings.json
 *.tfstate
 *.tfstate.*
+__azurite_*.json
+**/__pycache__/
+*.py[cod]
 crash.*.log

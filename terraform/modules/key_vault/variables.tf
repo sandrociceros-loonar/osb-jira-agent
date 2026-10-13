@@ -27,6 +27,13 @@ variable "jira_api_token" {
   default     = ""
 }
 
+variable "jira_assets_access_token" {
+  description = "Token opcional de Jira Assets"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
 variable "tags" {
   description = "Tags para governança de recursos"
   type        = map(string)

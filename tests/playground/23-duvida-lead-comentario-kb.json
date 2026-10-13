@@ -1,0 +1,20 @@
+{
+  "webhookEvent": "jira:issue_comment_created",
+  "issue": {
+    "id": "651204",
+    "key": "OP-8402",
+    "fields": {
+      "summary": "Lead em andamento: dúvida sobre formas de faturamento",
+      "description": "Lead em negociação comercial para fornecimento de software."
+    }
+  },
+  "comment": {
+    "id": "900010",
+    "body": "Vocês aceitam pagamento faturado por boleto bancário para 28 dias ou apenas cartão de crédito corporativo?",
+    "author": {
+      "accountId": "lead-contact-456",
+      "displayName": "Contato Comercial Lead"
+    },
+    "created": "2026-10-12T14:30:00.000+0000"
+  }
+}

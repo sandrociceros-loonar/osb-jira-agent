@@ -2,6 +2,7 @@
 
 import base64
 import re
+import unicodedata
 from urllib.parse import quote, urlparse
 
 import httpx
@@ -10,6 +11,10 @@ from pydantic import ValidationError
 from src.config import Settings
 from src.jira.tools import JIRA_TOOLS, JIRA_TOOLS_BY_NAME
 from src.models.agent_result import TriageDecision
+from src.models.jira_webhook import _extract_adf_text
+from src.utils.logger import setup_logger
+
+logger = setup_logger("jira-connector")
 
 
 class JiraConnectorError(Exception):
@@ -19,6 +24,7 @@ class JiraConnectorError(Exception):
 class JiraConnector:
     """Calls the allowlisted Jira operations represented by the collection manifests."""
 
+    AGENT_COMMENT_PREFIX = "Loonar - Agente Comercial (resposta automática)"
     TRANSITION_NAMES = (
         "start_lead_work",
         "transition_lead_to_proposal_item",
@@ -28,9 +34,13 @@ class JiraConnector:
     )
     ASSETS_API_ROOT = "https://api.atlassian.com/ex/jira"
     LEAD_DETAILS_FIELDS = (
-        "assignee,comment,description,summary,customfield_10115,customfield_10117,"
+        "assignee,description,summary,customfield_10115,customfield_10117,"
         "customfield_10116,customfield_10119,customfield_10468,customfield_10125"
     )
+    COMMENT_PAGE_SIZE = 100
+    MAX_LEAD_COMMENTS = 1000
+    ASSETS_AQL_PAGE_SIZE = 5
+    ASSETS_MANUFACTURER_ATTRIBUTE_NAMES = {"fabricante", "manufacturer"}
     PROPOSAL_ITEM_FIELDS = (
         "status,customfield_10191,customfield_10171,customfield_13867,customfield_10109,"
         "customfield_10245,customfield_13834,customfield_13334"
@@ -40,6 +50,7 @@ class JiraConnector:
         self,
         settings: Settings,
         transport: httpx.BaseTransport | None = None,
+        rag_engine: object | None = None,
     ) -> None:
         parsed_url = urlparse(settings.jira_instance_url)
         if (
@@ -68,6 +79,7 @@ class JiraConnector:
                 "JIRA_LEAD_PROJECT_KEY must be included in JIRA_ALLOWED_PROJECT_KEYS."
             )
 
+        self._settings = settings
         self.team_account_ids = settings.jira_team_account_ids
         self.allowed_projects = allowed_projects
         self._jira_api_email = settings.jira_api_email
@@ -77,17 +89,30 @@ class JiraConnector:
         self.transition_ids = settings.jira_transition_ids
         self.allow_write_operations = settings.jira_allow_write_operations
         self.assets_access_token = settings.jira_assets_access_token
+        self._assets_bearer_auth = bool(self.assets_access_token)
         self.assets_cloud_id = settings.jira_assets_cloud_id
         self.assets_workspace_id = settings.jira_assets_workspace_id
         self.assets_product_object_type_id = settings.jira_assets_product_object_type_id
+        self.manufacturer_field_id = settings.jira_manufacturer_field_id
+        self.agent_account_id = settings.jira_agent_account_id
         self.attachment_max_bytes = settings.jira_attachment_max_bytes
+        self.request_details_field_id = settings.jira_request_details_field_id
+        self.kb_human_escalation_team = settings.kb_human_escalation_team
+        self.kb_human_escalation_group_account_id = settings.kb_human_escalation_group_account_id
+        self.kb_human_escalation_transition_id = settings.kb_human_escalation_transition_id
+        self._rag_engine = rag_engine
         if not re.fullmatch(r"\d+", self.lead_issue_type_id):
             raise JiraConnectorError("JIRA_LEAD_ISSUE_TYPE_ID must contain only digits.")
         if not re.fullmatch(r"[A-Z][A-Z0-9_]*", self.lead_project_key):
             raise JiraConnectorError("JIRA_LEAD_PROJECT_KEY has an invalid format.")
         if not re.fullmatch(r"\d+", self.assets_product_object_type_id):
+            raise JiraConnectorError("JIRA_ASSETS_PRODUCT_OBJECT_TYPE_ID must contain only digits.")
+        if self.manufacturer_field_id and not re.fullmatch(
+            r"customfield_\d+", self.manufacturer_field_id
+        ):
             raise JiraConnectorError(
-                "JIRA_ASSETS_PRODUCT_OBJECT_TYPE_ID must contain only digits."
+                "JIRA_MANUFACTURER_FIELD_ID must be a Jira custom field ID such as "
+                "'customfield_12345'."
             )
         if any(
             not re.fullmatch(r"\d+", self.transition_ids.get(name, ""))
@@ -106,6 +131,8 @@ class JiraConnector:
             follow_redirects=True,
         )
         self._assets_client: httpx.Client | None = None
+        self._assets_product_attribute_names: dict[str, str] | None = None
+        self._authenticated_account_id: str | None = None
 
     def close(self) -> None:
         """Close the underlying HTTP connection pool."""
@@ -277,16 +304,134 @@ class JiraConnector:
 
     def get_lead_details(self, issue_key: str) -> dict[str, object]:
         key = self._encoded_issue_key(issue_key)
+        fields_str = self.LEAD_DETAILS_FIELDS
+        if self.request_details_field_id and self.request_details_field_id not in fields_str:
+            fields_str = f"{fields_str},{self.request_details_field_id}"
         response = self._request(
             "GET",
             f"/rest/api/3/issue/{key}",
             params={
                 "fieldsByKeys": "true",
-                "fields": self.LEAD_DETAILS_FIELDS,
+                "fields": fields_str,
                 "expand": "names",
             },
         )
-        return self._json(response)
+        data = self._json(response)
+        data["comments"] = self._list_issue_comments(key)
+        data["request_details"] = self._extract_lead_request_details(data)
+        return data
+
+    def _extract_lead_request_details(self, data: dict[str, object]) -> str | None:
+        """Extrai o conteúdo textual do campo Detalhes da Solicitação."""
+        fields = data.get("fields")
+        if not isinstance(fields, dict):
+            return None
+
+        # 1. Se houver campo customfield configurado
+        if self.request_details_field_id and self.request_details_field_id in fields:
+            val = fields.get(self.request_details_field_id)
+            if val is not None:
+                text = _extract_adf_text(val).strip()
+                if text:
+                    return text
+
+        # 2. Busca pelo nome do campo no mapa names
+        names = data.get("names")
+        if isinstance(names, dict):
+            for fid, fname in names.items():
+                if isinstance(fname, str):
+                    fname_norm = self._normalize_field_name(fname)
+                    if "detalhes da solicitacao" in fname_norm or "request details" in fname_norm:
+                        val = fields.get(fid)
+                        if val is not None:
+                            text = _extract_adf_text(val).strip()
+                            if text:
+                                return text
+
+        # 3. Busca por chaves customizadas ou atributos com nomes conhecidos
+        for k, v in fields.items():
+            k_lower = k.lower()
+            if ("detalhe" in k_lower or "solicitacao" in k_lower) and v is not None:
+                text = _extract_adf_text(v).strip()
+                if text:
+                    return text
+
+        return None
+
+    def get_latest_issue_comment(self, issue_key: str) -> dict[str, object]:
+        key = self._encoded_issue_key(issue_key)
+        response = self._request(
+            "GET",
+            f"/rest/api/3/issue/{key}/comment",
+            params={"orderBy": "-created", "maxResults": 1},
+        )
+        data = self._json(response)
+        comments = data.get("comments", [])
+        if not isinstance(comments, list):
+            raise JiraConnectorError("Jira returned an invalid issue comment list.")
+        if not comments:
+            return {"issue_key": issue_key, "latest_comment": None}
+        latest = comments[0]
+        if not isinstance(latest, dict):
+            raise JiraConnectorError("Jira returned an invalid issue comment.")
+        return {"issue_key": issue_key, "latest_comment": latest}
+
+    def is_authenticated_user_comment(self, comment: object) -> bool:
+        """Check whether a comment was authored by the Jira account used by this connector."""
+        if not isinstance(comment, dict):
+            return False
+        author = comment.get("author")
+        account_id = (
+            author.get("accountId") or author.get("account_id")
+            if isinstance(author, dict)
+            else None
+        )
+        if not isinstance(account_id, str) or not account_id:
+            return False
+        if self.agent_account_id:
+            return account_id == self.agent_account_id
+        if self._authenticated_account_id is None:
+            response = self._request("GET", "/rest/api/3/myself")
+            current_user = self._json(response)
+            authenticated_account_id = current_user.get("accountId")
+            if not isinstance(authenticated_account_id, str) or not authenticated_account_id:
+                raise JiraConnectorError("Jira did not return the authenticated user's account ID.")
+            self._authenticated_account_id = authenticated_account_id
+        return account_id == self._authenticated_account_id
+
+    def _list_issue_comments(self, encoded_issue_key: str) -> list[dict[str, object]]:
+        comments: list[dict[str, object]] = []
+        start_at = 0
+        total: int | None = None
+        while total is None or start_at < total:
+            response = self._request(
+                "GET",
+                f"/rest/api/3/issue/{encoded_issue_key}/comment",
+                params={
+                    "startAt": start_at,
+                    "maxResults": self.COMMENT_PAGE_SIZE,
+                    "orderBy": "created",
+                },
+            )
+            data = self._json(response)
+            page = data.get("comments", [])
+            reported_total = data.get("total", len(page) if isinstance(page, list) else None)
+            if not isinstance(page, list) or not isinstance(reported_total, int):
+                raise JiraConnectorError("Jira returned invalid paginated issue comments.")
+            if not page:
+                break
+            if any(not isinstance(comment, dict) for comment in page):
+                raise JiraConnectorError("Jira returned an invalid comment in the lead history.")
+            comments.extend(page)
+            if len(comments) > self.MAX_LEAD_COMMENTS:
+                raise JiraConnectorError(
+                    f"Lead history exceeds the {self.MAX_LEAD_COMMENTS}-comment processing limit."
+                )
+            total = reported_total
+            start_at += len(page)
+            if start_at >= total:
+                break
+        return comments
 
     def start_lead_work(self, issue_key: str) -> dict[str, object]:
         return self._transition_issue(
@@ -410,6 +555,25 @@ class JiraConnector:
             return self._json(response)
         return {"issue_key": issue_key, "added": True, "public": False}
 
+    def add_public_comment(self, issue_key: str, comment: str) -> dict[str, object]:
+        self._require_write_enabled()
+        key = self._encoded_issue_key(issue_key)
+        body = comment.strip()
+        while body.startswith(self.AGENT_COMMENT_PREFIX):
+            body = body[len(self.AGENT_COMMENT_PREFIX) :].lstrip(" \r\n:-—")
+        if not body:
+            raise JiraConnectorError("A public Jira comment must contain message text.")
+        response = self._request(
+            "POST",
+            f"/rest/api/2/issue/{key}/comment",
+            json={"body": body},
+        )
+        if response.content:
+            result = self._json(response)
+            result["public"] = True
+            return result
+        return {"issue_key": issue_key, "added": True, "public": True}
+
     def list_assets_schemas(
         self,
         start_at: int = 0,
@@ -459,20 +623,246 @@ class JiraConnector:
     ) -> dict[str, object]:
         cloud_id = self._resolve_cloud_id()
         resolved_workspace = workspace_id or self._resolve_workspace_id()
-        safe_manufacturer = manufacturer.replace("\\", "\\\\").replace('"', '\\"')
-        if any(ord(character) < 32 for character in safe_manufacturer):
-            raise JiraConnectorError("Manufacturer search contains unsupported control characters.")
+        safe_manufacturer = self._escape_aql_value(manufacturer, "manufacturer")
         query = (
-            f'objectTypeId = {self.assets_product_object_type_id} AND '
+            f"objectTypeId = {self.assets_product_object_type_id} AND "
             f'Fabricante like "{safe_manufacturer}"'
         )
+        return self._search_assets_products(query, cloud_id, resolved_workspace)
+
+    def search_assets_products_by_software(
+        self,
+        software_name: str,
+        workspace_id: str | None = None,
+    ) -> dict[str, object]:
+        cloud_id = self._resolve_cloud_id()
+        resolved_workspace = workspace_id or self._resolve_workspace_id()
+        safe_name = self._escape_aql_value(software_name, "software name")
+        query = f'objectTypeId = {self.assets_product_object_type_id} AND Name like "{safe_name}"'
+        return self._search_assets_products(query, cloud_id, resolved_workspace)
+
+    def _search_assets_products(
+        self,
+        query: str,
+        cloud_id: str,
+        workspace_id: str,
+    ) -> dict[str, object]:
         response = self._assets_request(
             "POST",
-            f"/jsm/assets/workspace/{quote(resolved_workspace, safe='')}/v1/object/aql",
+            f"/jsm/assets/workspace/{quote(workspace_id, safe='')}/v1/object/aql",
             json={"qlQuery": query},
+            params={"startAt": 0, "maxResults": self.ASSETS_AQL_PAGE_SIZE},
             cloud_id=cloud_id,
         )
-        return self._json(response)
+        data = self._json(response)
+        result_key = next(
+            (key for key in ("values", "objectEntries") if isinstance(data.get(key), list)),
+            None,
+        )
+        if result_key is None:
+            raise JiraConnectorError("Jira Assets returned an invalid AQL result list.")
+        entries = data[result_key]
+        compact_entries: list[dict[str, object]] = []
+        if entries:
+            attribute_names = self._get_assets_product_attribute_names(workspace_id)
+            manufacturer_attribute_ids = {
+                attribute_id
+                for attribute_id, name in attribute_names.items()
+                if name.casefold() in self.ASSETS_MANUFACTURER_ATTRIBUTE_NAMES
+            }
+            if not manufacturer_attribute_ids:
+                raise JiraConnectorError(
+                    "The Jira Assets product object type has no Fabricante/Manufacturer attribute."
+                )
+
+            for entry in entries:
+                if not isinstance(entry, dict):
+                    raise JiraConnectorError("Jira Assets returned an invalid product result.")
+                manufacturers = self._manufacturer_values_from_assets_entry(
+                    entry,
+                    manufacturer_attribute_ids,
+                )
+                compact_entries.append(
+                    {
+                        "id": entry.get("id"),
+                        "objectKey": entry.get("objectKey"),
+                        "name": entry.get("label") or entry.get("name"),
+                        "manufacturer": manufacturers,
+                    }
+                )
+
+        start_at = data.get("startAt", 0)
+        total = data.get("total")
+        has_more_results = bool(data.get("hasMoreResults")) or (
+            isinstance(start_at, int) and isinstance(total, int) and total > start_at + len(entries)
+        )
+        compact_data = {key: data[key] for key in ("startAt", "maxResults", "total") if key in data}
+        compact_data["hasMoreResults"] = has_more_results
+        compact_data[result_key] = compact_entries
+        return compact_data
+
+    def _get_assets_product_attribute_names(self, workspace_id: str) -> dict[str, str]:
+        if self._assets_product_attribute_names is not None:
+            return self._assets_product_attribute_names
+        response = self._assets_request(
+            "GET",
+            f"/jsm/assets/workspace/{quote(workspace_id, safe='')}"
+            f"/v1/objecttype/{quote(self.assets_product_object_type_id, safe='')}/attributes",
+        )
+        try:
+            data = response.json()
+        except ValueError as exc:
+            raise JiraConnectorError(
+                "Jira Assets returned non-JSON product attribute metadata."
+            ) from exc
+        if isinstance(data, list):
+            attributes = data
+        elif isinstance(data, dict):
+            attributes = data.get("objectTypeAttributes", data.get("values", []))
+        else:
+            attributes = None
+        if not isinstance(attributes, list):
+            raise JiraConnectorError("Jira Assets returned invalid product attribute metadata.")
+        names = {
+            str(attribute["id"]): str(attribute["name"])
+            for attribute in attributes
+            if isinstance(attribute, dict)
+            and attribute.get("id") is not None
+            and isinstance(attribute.get("name"), str)
+        }
+        self._assets_product_attribute_names = names
+        return names
+
+    @staticmethod
+    def _manufacturer_values_from_assets_entry(
+        entry: dict[str, object],
+        manufacturer_attribute_ids: set[str],
+    ) -> list[str]:
+        attributes = entry.get("attributes", [])
+        if not isinstance(attributes, list):
+            raise JiraConnectorError("Jira Assets returned invalid product attributes.")
+        values: list[str] = []
+        for attribute in attributes:
+            if (
+                not isinstance(attribute, dict)
+                or str(attribute.get("objectTypeAttributeId", "")) not in manufacturer_attribute_ids
+            ):
+                continue
+            object_values = attribute.get("objectAttributeValues", [])
+            if not isinstance(object_values, list):
+                raise JiraConnectorError("Jira Assets returned invalid manufacturer values.")
+            for object_value in object_values:
+                if not isinstance(object_value, dict):
+                    continue
+                value = (
+                    object_value.get("displayValue")
+                    or object_value.get("searchValue")
+                    or object_value.get("value")
+                )
+                if isinstance(value, str) and value not in values:
+                    values.append(value)
+        return values
+
+    def update_lead_manufacturer(
+        self,
+        issue_key: str,
+        manufacturer_name: str,
+        manufacturer_object_id: str | None = None,
+    ) -> dict[str, object]:
+        self._require_write_enabled()
+        project_key = issue_key.split("-", maxsplit=1)[0].upper()
+        if project_key != self.lead_project_key:
+            raise JiraConnectorError(
+                "Manufacturer updates are restricted to the configured lead project."
+            )
+        key = self._encoded_issue_key(issue_key)
+        issue = self._json(
+            self._request(
+                "GET",
+                f"/rest/api/3/issue/{key}",
+                params={"expand": "names,editmeta"},
+            )
+        )
+        names = issue.get("names")
+        editmeta = issue.get("editmeta")
+        if not isinstance(names, dict) or not isinstance(editmeta, dict):
+            raise JiraConnectorError(
+                "Jira did not return field names and edit metadata for manufacturer update."
+            )
+        editable_fields = editmeta.get("fields")
+        current_fields = issue.get("fields")
+        if not isinstance(editable_fields, dict) or not isinstance(current_fields, dict):
+            raise JiraConnectorError("Jira returned incomplete issue field metadata.")
+        issue_type = current_fields.get("issuetype")
+        if (
+            not isinstance(issue_type, dict)
+            or str(issue_type.get("id", "")) != self.lead_issue_type_id
+        ):
+            raise JiraConnectorError(
+                "Manufacturer updates are restricted to the configured lead issue type."
+            )
+
+        field_id = self._find_manufacturer_field_id(names, editable_fields)
+        field_metadata = editable_fields.get(field_id)
+        if not isinstance(field_metadata, dict):
+            raise JiraConnectorError("Jira manufacturer field metadata is invalid.")
+        schema = field_metadata.get("schema", {})
+        if not isinstance(schema, dict):
+            raise JiraConnectorError("Jira manufacturer field schema is invalid.")
+
+        custom_type = str(schema.get("custom", "")).casefold()
+        item_type = str(schema.get("items", "")).casefold()
+        is_assets_field = any(
+            "insight" in value or "assets" in value for value in (custom_type, item_type)
+        )
+        if is_assets_field:
+            if not manufacturer_object_id:
+                raise JiraConnectorError(
+                    "The Jira manufacturer field is an Assets object picker, but the Assets "
+                    "result did not provide the manufacturer's object ID."
+                )
+            workspace_id = self._resolve_workspace_id()
+            value: object = [
+                {
+                    "workspaceId": workspace_id,
+                    "id": f"{workspace_id}:{manufacturer_object_id}",
+                    "objectId": manufacturer_object_id,
+                }
+            ]
+            current_value = current_fields.get(field_id)
+            if self._assets_field_contains(current_value, manufacturer_object_id):
+                return {
+                    "issue_key": issue_key,
+                    "field_id": field_id,
+                    "manufacturer": manufacturer_name,
+                    "updated": False,
+                }
+        elif schema.get("type") == "string":
+            value = manufacturer_name
+            if current_fields.get(field_id) == manufacturer_name:
+                return {
+                    "issue_key": issue_key,
+                    "field_id": field_id,
+                    "manufacturer": manufacturer_name,
+                    "updated": False,
+                }
+        else:
+            raise JiraConnectorError(
+                "The Jira manufacturer field is neither a text field nor an Assets object "
+                "picker; no value was written."
+            )
+
+        self._request(
+            "PUT",
+            f"/rest/api/3/issue/{key}",
+            json={"fields": {field_id: value}},
+        )
+        return {
+            "issue_key": issue_key,
+            "field_id": field_id,
+            "manufacturer": manufacturer_name,
+            "updated": True,
+        }
 
     def send_item_to_purchasing(
         self,
@@ -534,6 +924,136 @@ class JiraConnector:
             },
         )
 
+    def query_knowledge_base(self, query: str) -> dict[str, object]:
+        """Pesquisa na base de conhecimento Confluence via RAG (com cache e fallback direto)."""
+        rag_engine = self._rag_engine
+        if rag_engine is None:
+            from src.kb import get_rag_engine
+
+            rag_engine = get_rag_engine(self._settings)
+
+        result = rag_engine.search(query)
+        return {
+            "query": query,
+            "found": result.found,
+            "confidence_score": result.confidence_score,
+            "fallback_used": result.fallback_used,
+            "source": result.source,
+            "message": result.message,
+            "matches": [
+                {
+                    "title": m.title,
+                    "url": m.url,
+                    "content": m.content,
+                    "score": round(m.score, 3),
+                }
+                for m in result.matches
+            ],
+        }
+
+    def escalate_to_human_group(
+        self,
+        issue_key: str,
+        reason: str,
+        missing_data_message: str | None = None,
+    ) -> dict[str, object]:
+        """Encaminha o lead para a equipe de atendimento comercial humano."""
+        self._require_write_enabled()
+        self._validate_issue_key(issue_key)
+        encoded_key = self._encoded_issue_key(issue_key)
+
+        actions: list[str] = []
+
+        # 1. Transição de workflow (se configurada)
+        if self.kb_human_escalation_transition_id:
+            try:
+                self._transition_issue(issue_key, self.kb_human_escalation_transition_id)
+                actions.append(
+                    f"Issue transicionada para status humano (ID {self.kb_human_escalation_transition_id})."
+                )
+            except Exception as exc:
+                logger.warning(
+                    "Não foi possível aplicar transição de escalação %s: %s",
+                    self.kb_human_escalation_transition_id,
+                    exc,
+                )
+
+        # 2. Atribuição à equipe ou usuário humano (se configurado)
+        target_account_id = (
+            self.kb_human_escalation_group_account_id
+            or self.team_account_ids.get(self.kb_human_escalation_team)
+        )
+        if target_account_id:
+            try:
+                self._request(
+                    "PUT",
+                    f"/rest/api/3/issue/{encoded_key}",
+                    json={"fields": {"assignee": {"accountId": target_account_id}}},
+                )
+                actions.append(f"Issue atribuída à equipe '{self.kb_human_escalation_team}'.")
+            except Exception as exc:
+                logger.warning(
+                    "Não foi possível atribuir issue para %s: %s", target_account_id, exc
+                )
+
+        # 3. Nota interna para a equipe humana
+        internal_msg = (
+            f"[Escalação Humana] Lead encaminhado para '{self.kb_human_escalation_team}'.\n"
+            f"Motivo: {reason}"
+        )
+        try:
+            self._request(
+                "POST",
+                f"/rest/servicedeskapi/request/{encoded_key}/comment",
+                json={"body": internal_msg, "public": False},
+            )
+            actions.append("Nota interna de encaminhamento registrada.")
+        except Exception:
+            try:
+                self._request(
+                    "POST",
+                    f"/rest/api/3/issue/{encoded_key}/comment",
+                    json={
+                        "body": {
+                            "type": "doc",
+                            "version": 1,
+                            "content": [
+                                {
+                                    "type": "paragraph",
+                                    "content": [{"type": "text", "text": internal_msg}],
+                                }
+                            ],
+                        }
+                    },
+                )
+                actions.append("Nota interna de encaminhamento registrada.")
+            except Exception as exc:
+                logger.warning("Falha ao registrar nota interna de escalação: %s", exc)
+
+        # 4. Mensagem pública cordial ao lead/cliente (como humano, sem citar que é IA)
+        public_msg_parts = [
+            "Olá! Agradeço a sua mensagem. Estou verificando as respostas para as suas dúvidas com nossa "
+            "equipe técnica/comercial e logo mais entrarei em contato com você com o retorno completo."
+        ]
+        if missing_data_message and missing_data_message.strip():
+            clean_missing = missing_data_message.strip()
+            public_msg_parts.append(
+                f"Enquanto verifico essas informações, para adiantarmos a elaboração da sua proposta comercial, "
+                f"você poderia me confirmar também os seguintes dados:\n{clean_missing}"
+            )
+
+        public_msg = "\n\n".join(public_msg_parts)
+        self.add_public_comment(issue_key, public_msg)
+        actions.append("Mensagem comercial pública de encaminhamento enviada ao lead.")
+
+        return {
+            "issue_key": issue_key,
+            "escalated": True,
+            "team": self.kb_human_escalation_team,
+            "reason": reason,
+            "actions": actions,
+        }
+
     def _transition_issue(
         self,
         issue_key: str,
@@ -548,8 +1068,7 @@ class JiraConnector:
         )
         available = self._json(available_response).get("transitions", [])
         if not isinstance(available, list) or not any(
-            isinstance(item, dict) and str(item.get("id")) == transition_id
-            for item in available
+            isinstance(item, dict) and str(item.get("id")) == transition_id for item in available
         ):
             raise JiraConnectorError(
                 f"Configured Jira transition '{transition_id}' is not available for this issue."
@@ -576,6 +1095,59 @@ class JiraConnector:
             raise JiraConnectorError("Jira tenant info did not contain a Cloud ID.")
         self.assets_cloud_id = cloud_id
         return cloud_id
+
+    def _find_manufacturer_field_id(
+        self,
+        names: dict[str, object],
+        editable_fields: dict[str, object],
+    ) -> str:
+        if self.manufacturer_field_id:
+            if self.manufacturer_field_id not in editable_fields:
+                raise JiraConnectorError(
+                    "Configured JIRA_MANUFACTURER_FIELD_ID is not editable on this issue."
+                )
+            return self.manufacturer_field_id
+
+        accepted_names = {"fabricante", "manufacturer", "software manufacturer"}
+        candidates = [
+            field_id
+            for field_id, field_name in names.items()
+            if isinstance(field_name, str)
+            and self._normalize_field_name(field_name) in accepted_names
+            and field_id in editable_fields
+        ]
+        if len(candidates) != 1:
+            raise JiraConnectorError(
+                "Expected exactly one editable Jira field named Fabricante/Manufacturer; "
+                f"found {len(candidates)}. Configure JIRA_MANUFACTURER_FIELD_ID if needed."
+            )
+        return candidates[0]
+
+    @staticmethod
+    def _normalize_field_name(value: str) -> str:
+        normalized = unicodedata.normalize("NFKD", value.casefold())
+        return "".join(
+            character for character in normalized if not unicodedata.combining(character)
+        )
+
+    @staticmethod
+    def _assets_field_contains(value: object, object_id: str) -> bool:
+        if isinstance(value, dict):
+            return str(value.get("objectId", "")) == object_id or str(value.get("id", "")).endswith(
+                f":{object_id}"
+            )
+        if isinstance(value, list):
+            return any(JiraConnector._assets_field_contains(item, object_id) for item in value)
+        return False
+
+    @staticmethod
+    def _escape_aql_value(value: str, label: str) -> str:
+        escaped = value.replace("\\", "\\\\").replace('"', '\\"')
+        if any(ord(character) < 32 for character in escaped):
+            raise JiraConnectorError(
+                f"{label.capitalize()} contains unsupported control characters."
+            )
+        return escaped
 
     def _resolve_workspace_id(self) -> str:
         if self.assets_workspace_id:
@@ -605,6 +1177,16 @@ class JiraConnector:
                 f"{self.ASSETS_API_ROOT}/{quote(str(cloud_id), safe='')}{path}",
                 **kwargs,
             )
+            if response.status_code == 401 and self._assets_bearer_auth:
+                response.close()
+                client.close()
+                self._assets_client = None
+                self._assets_bearer_auth = False
+                response = self._get_assets_client().request(
+                    method,
+                    f"{self.ASSETS_API_ROOT}/{quote(str(cloud_id), safe='')}{path}",
+                    **kwargs,
+                )
             response.raise_for_status()
             return response
         except httpx.HTTPStatusError as exc:
@@ -621,7 +1203,7 @@ class JiraConnector:
         if self._assets_client is None:
             headers = {"Accept": "application/json"}
             auth = None
-            if self.assets_access_token:
+            if self._assets_bearer_auth:
                 headers["Authorization"] = f"Bearer {self.assets_access_token}"
             else:
                 auth = httpx.BasicAuth(self._jira_api_email, self._jira_api_token)
@@ -681,8 +1263,11 @@ class JiraConnector:
             ) from exc
 
 
-def get_jira_connector(settings: Settings) -> JiraConnector | None:
+def get_jira_connector(
+    settings: Settings,
+    rag_engine: object | None = None,
+) -> JiraConnector | None:
     """Return a configured connector, or None when credentials are not supplied."""
     if not settings.jira_api_email and not settings.jira_api_token:
         return None
-    return JiraConnector(settings)
+    return JiraConnector(settings, rag_engine=rag_engine)

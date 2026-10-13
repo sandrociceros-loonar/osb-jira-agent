@@ -1,0 +1,11 @@
+{
+  "webhookEvent": "jira:issue_updated",
+  "issue": {
+    "id": "651204",
+    "key": "OP-8402",
+    "fields": {
+      "summary": "Teste Playground: revisar dados e comentários do lead",
+      "description": "Leia os campos atuais e todos os comentários de OP-8402. Faça um resumo dos dados comerciais fornecidos, das respostas já recebidas e das informações que continuam pendentes. Não altere a issue."
+    }
+  }
+}

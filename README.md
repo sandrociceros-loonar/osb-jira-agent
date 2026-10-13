@@ -16,12 +16,12 @@ sequenceDiagram
     participant Func as Azure Function (Python v2)
     participant KV as Azure Key Vault
     participant Foundry as Microsoft Foundry Responses API
-    participant LLM as Modelo GPT-4o
+    participant LLM as Modelo GPT-5
     participant JiraConnector as Cliente Jira do projeto
     participant JiraAPI as Jira REST / Assets API
 
-    User->>Jira: Cria / Atualiza lead, proposta ou item
-    Jira->>Func: Webhook POST /api/jira-webhook (HMAC / Secret)
+    User->>Jira: Cria lead ou responde ao comentário público
+    Jira->>Func: Webhook issue_created / issue_updated / comment_created
     Func->>Func: Valida assinatura / segredo
     Func->>Foundry: Envia contexto comercial e ferramentas
     Foundry->>LLM: Analisa pedido e dados do registro CRM
@@ -41,10 +41,41 @@ sequenceDiagram
 > Function executa as chamadas REST ao Jira por meio do cliente em `src/jira/connector.py`.
 >
 > O processamento do webhook é compartilhado por duas entradas: a Azure Function para receber
-> diretamente os webhooks Jira e o Hosted Agent com protocolo `invocations`. O Jira deve continuar
-> apontando para a Function, que verifica o segredo do webhook. O endpoint Hosted Agent é destinado
-> a clientes que já possam autenticar-se no Foundry; não pressupõe que o Jira consiga autenticar-se
-> diretamente nesse endpoint.
+> diretamente os webhooks Jira e o Hosted Agent com protocolo `invocations`. Configure no Jira
+> os eventos `issue_created`, `issue_updated` e `comment_created`; o endpoint Jira deve continuar
+> apontando para a Function, que verifica o segredo do webhook. O Hosted Agent confia na
+> autenticação Microsoft Entra exigida pelo endpoint Foundry; chamadas feitas pelo Playground não
+> precisam repetir o segredo Jira. Restrinja quem pode invocar o Hosted Agent, pois essas chamadas
+> podem executar operações Jira de escrita. Não configure o endpoint Foundry diretamente no Jira.
+> O endpoint de invocações transmite a resposta em SSE e envia keep-alives a cada 15 segundos durante
+> processamentos longos, como a leitura de comentários e consultas ao Assets.
+
+### Capacidade e processamento paralelo
+
+O webhook Jira é processado de forma síncrona: cada requisição aceita um evento, executa a triagem
+e aguarda as chamadas ao Foundry e ao Jira antes de responder. Não há fila durável nem processamento
+em lote nesta arquitetura. Requisições distintas podem avançar em paralelo conforme a escala dos
+serviços, mas o repositório não define uma taxa garantida de leads por segundo/minuto nem um limite
+explícito de requisições simultâneas por instância. O throughput real depende da duração da triagem,
+do consumo de tokens, das quotas do modelo e dos limites das APIs Jira/Assets; deve ser medido no
+ambiente implantado.
+
+Valores e pontos de ajuste:
+
+| Componente | Configuração atual / onde ajustar |
+|---|---|
+| Azure Function (entrada principal do Jira) | Flex Consumption, **2.048 MB por instância** e máximo configurado de **10 instâncias**, em `terraform/modules/function_app/main.tf` (`instanceMemoryMB` e `maximumInstanceCount`). Altere esses valores para reduzir/aumentar os recursos e o teto de escala da Function. O número de instâncias não equivale a uma garantia de requisições simultâneas ou leads/minuto. |
+| Hosted Agent Foundry (entrada adicional) | `azure.yaml`, em `container.resources`: **0,5 CPU e 1 GiB**. Ajuste `cpu`/`memory` e publique novamente o Hosted Agent. O repositório não fixa a quantidade máxima de réplicas nem a concorrência desse serviço; confira os limites de escala do ambiente Foundry. |
+| Deployment do modelo Foundry | `azure_ai_model_capacity` em `terraform/variables.tf`, cujo exemplo é `50` em `terraform/terraform.tfvars.example` (capacidade em milhares de tokens por minuto, conforme o SKU/modelo e a região). Ajuste respeitando disponibilidade, quota e limites do deployment; isso aumenta ou diminui capacidade de tokens, não uma quantidade direta de leads. |
+| Chamadas de ferramentas por triagem | `AZURE_AI_MAX_TOOL_CALLS`, padrão **16**, em `src/config.py`. É um limite por execução, não um limite de leads paralelos. As chamadas de ferramenta do modelo são explicitamente serializadas (`parallel_tool_calls=False`) em `src/agent/triage_agent.py`; aumentar esse limite pode prolongar uma triagem, não aumentar sua concorrência. |
+
+Para aumentar ou reduzir a escala, altere a configuração do componente relevante e aplique-a ao
+ambiente de destino: mudanças Terraform exigem revisar o plano e aplicar a infraestrutura; mudanças
+no Hosted Agent exigem novo deploy. Depois, faça um teste de carga controlado e acompanhe latência,
+erros, throttling, consumo de tokens e limites do Jira. Aumentar somente o máximo de instâncias da
+Function pode não elevar a vazão se o gargalo estiver no modelo ou no Jira. Para absorver picos sem
+manter cada webhook aguardando toda a triagem, seria necessário introduzir uma fila e processamento
+assíncrono, o que não está implementado atualmente.
 
 ### Principais Pilares
 
@@ -53,8 +84,8 @@ sequenceDiagram
 3. **Cliente Jira implementado pelo projeto**: Executa operações tipadas na API REST do Jira e Assets usando credenciais guardadas fora do código; não é um conector nativo do Foundry.
 4. **Segurança Enterprise**:
    - Autenticação com serviços Azure via **Managed Identity** (`DefaultAzureCredential`).
-   - Validação de webhooks com verificação em tempo constante (`hmac.compare_digest`) contra segredos protegidos.
-5. **Infraestrutura como Código (Terraform)**: Módulos reutilizáveis para Azure AI Foundry, Key Vault e Function App.
+   - Validação de webhooks com verificação em tempo constante (`hmac.compare_digest`) contra o segredo configurado no ambiente da Function.
+5. **Infraestrutura como Código (Terraform)**: Provisiona Key Vault e Function App e integra com um projeto Foundry existente.
 6. **Tooling Moderno**: Gerenciamento ultrarrápido com `uv` e testes automatizados com `pytest`.
 
 ---
@@ -72,7 +103,7 @@ osb-jira-agent/
 │   ├── outputs.tf                 # Endpoints e IDs provisionados
 │   ├── terraform.tfvars.example   # Modelo de variáveis locais
 │   └── modules/
-│       ├── ai_foundry/            # AI Services, Hub & Model Deployment
+│       ├── ai_foundry/            # Módulo opcional de AI Services/model deployment; não usado pelo root atual
 │       ├── key_vault/             # Key Vault e gestão de segredos
 │       └── function_app/          # Storage, Function App e RBAC
 ├── src/
@@ -101,6 +132,10 @@ osb-jira-agent/
 │   ├── test_hosted_agent.py       # Testes do adapter Foundry Invocations
 │   ├── test_triage_agent.py       # Testes do prompt comercial e parsing de decisão
 │   └── test_webhook_security.py   # Testes de validação de segurança
+├── scripts/
+│   ├── get-webhook-endpoint.sh    # Consulta endpoint real e valida saúde da Function
+│   ├── dev.sh                     # Utilitários de desenvolvimento (test, lint, format)
+│   └── check-local-prereqs.sh     # Validação de pré-requisitos para modelos locais
 ├── function_app.py                # Ponto de entrada raiz do Azure Functions host
 ├── host.json                      # Configuração do runtime do Azure Functions
 ├── local.settings.json.example    # Variáveis para emulação local do Azure Functions
@@ -108,6 +143,7 @@ osb-jira-agent/
 ├── Makefile                       # Comandos rápidos de automação
 ├── .env.example                   # Exemplo de variáveis de ambiente
 ├── azure.yaml                     # Serviço Hosted Agent para Azure Developer CLI
+├── FINE-TUNNING.md                # Guia de engenharia de prompts, assertividade e testes
 └── README.md                      # Documentação do projeto
 ```
 
@@ -115,28 +151,42 @@ osb-jira-agent/
 
 ## Microsoft Foundry Hosted Agent
 
+Para atualizar a versão implantada, consulte o [guia de implantação](./DEPLOYMENT.md).
+
 O serviço em `azure.yaml` declara um Hosted Agent de código Python 3.13 usando o protocolo
 `invocations` 2.0.0. O adapter em `src/hosted_agent/main.py` encaminha o corpo bruto e os headers
-para `src/webhook_handler.py`, a mesma rotina chamada pela Function. Assim, a autenticação do
-webhook, a validação do payload, o filtro de eventos e a triagem não são duplicados.
+para `src/webhook_handler.py`, a mesma rotina chamada pela Function. A validação do payload, o
+filtro de eventos e a triagem são compartilhados; cada entrada autentica segundo seu próprio
+limite de confiança.
 
-O Hosted Agent espera um projeto Foundry e um deployment de modelo já existentes; essa configuração
-não cria recursos nem implanta um modelo. O runtime fornece `FOUNDRY_PROJECT_ENDPOINT`, aceito
-como alias de `AZURE_AI_PROJECT_ENDPOINT`. Configure `AZURE_AI_MODEL_DEPLOYMENT_NAME` com um
-deployment existente no projeto. `azure.yaml` não contém endpoint, ID ARM nem credenciais.
-Antes de um deploy futuro, associe um ambiente do Azure Developer CLI ao projeto Foundry existente
-e defina nele `AZURE_AI_PROJECT_ENDPOINT` e `AZURE_AI_MODEL_DEPLOYMENT_NAME`.
+O Hosted Agent usa um projeto Foundry e um deployment de modelo. O Terraform provisiona a conta,
+o projeto e o deployment GPT-5 para a Function; `azure.yaml` não contém endpoint, ID ARM nem
+credenciais. O runtime fornece `FOUNDRY_PROJECT_ENDPOINT`, aceito como alias de
+`AZURE_AI_PROJECT_ENDPOINT`; configure `AZURE_AI_MODEL_DEPLOYMENT_NAME` para corresponder ao
+deployment provisionado. O ambiente Azure ativo usa `ENVIRONMENT=development`.
 
 As credenciais Jira e o segredo do webhook são dados sensíveis: não os coloque em `azure.yaml`.
-Para o Hosted Agent, forneça `JIRA_WEBHOOK_SECRET`, `JIRA_INSTANCE_URL`, `JIRA_API_EMAIL`,
-`JIRA_API_TOKEN` e as demais configurações `JIRA_*` pelo mecanismo seguro de segredos/ambiente do
-runtime. Mantenha `JIRA_ENABLE_WRITE_OPERATIONS=false` até confirmar os IDs de workflow e as
-permissões da instância alvo.
+O Hosted Agent lê `jira-api-token` e `jira-assets-access-token` diretamente do Azure Key Vault
+usando a identidade do próprio agente (`DefaultAzureCredential`). O segredo `jira-webhook-secret`
+é validado pela Azure Function, que recebe os webhooks diretos do Jira. A identidade Hosted Agent
+recebe somente `Key Vault Secrets User` no vault; os valores não são copiados para variáveis do
+`azd`, manifestos ou logs. As configurações não secretas `JIRA_*` e `JIRA_KEY_VAULT_URL` são
+fornecidas pelo ambiente `azd`.
 
-Para depurar no VS Code, instale as dependências com `uv sync --all-extras` e escolha **Attach to
-Foundry Hosted Agent**. A task associada inicia localmente o servidor Invocations com debugpy e
-pode abrir o Agent Inspector. Isso é separado de `func start`; nenhum dos servidores é iniciado
-durante esta preparação.
+Como o serviço usa `dependencyResolution: remote_build`, mantenha `requirements.txt` sincronizado
+com `uv.lock` sempre que alterar dependências de runtime:
+`uv export --format requirements-txt --no-dev --no-hashes --no-emit-project -o requirements.txt`.
+O build remoto do Foundry instala as dependências declaradas nesse arquivo.
+
+O Jira deve continuar apontando para a Function App como entrada de webhooks. O endpoint Invocations
+do Foundry exige autenticação Microsoft Entra e não deve ser configurado diretamente como webhook
+Jira. A Function mantém a validação da assinatura do Jira; o Hosted Agent aceita chamadas de
+usuários autenticados e autorizados no Foundry.
+
+Para depurar no VS Code, instale as dependências com `uv sync --all-extras --group dev` e escolha
+**Attach to Foundry Hosted Agent**. A configuração inicia `agentdev run` no servidor Invocations,
+abre o Agent Inspector e conecta o debugger. Isso é separado de `func start`; nenhum servidor é
+iniciado durante a instalação.
 
 ---
 
@@ -159,7 +209,7 @@ Utilize o `uv` para sincronizar o ambiente virtual isolado:
 ```bash
 make install
 # ou diretamente:
-uv sync --all-extras
+uv sync --all-extras --group dev
 ```
 
 ### 3. Configuração de Ambiente
@@ -167,8 +217,8 @@ uv sync --all-extras
 Copie os modelos de configuração e preencha com as credenciais do seu ambiente:
 
 ```bash
-cp .env.example .env
-cp local.settings.json.example local.settings.json
+test -f .env || cp .env.example .env
+test -f local.settings.json || cp local.settings.json.example local.settings.json
 ```
 
 Variáveis chave em `.env` / `local.settings.json`:
@@ -183,9 +233,19 @@ Variáveis chave em `.env` / `local.settings.json`:
 - `JIRA_WEBHOOK_SECRET`: Token ou segredo compartilhado para validar requisições do Jira.
 - `JIRA_INSTANCE_URL`: URL base da organização no Atlassian Cloud.
 - `JIRA_API_EMAIL` e `JIRA_API_TOKEN`: credenciais Basic Auth para a API Jira.
+- `JIRA_KEY_VAULT_URL`: URL do Key Vault cujos segredos Jira são carregados pelo Hosted Agent;
+  a identidade local autenticada com `az login` precisa ter acesso de leitura aos segredos.
 - `JIRA_TEAM_ACCOUNT_IDS`: JSON opcional que associa nomes de equipe a `accountId`s do Jira, se uma atribuição for explicitamente solicitada.
 - `JIRA_ALLOWED_PROJECT_KEYS`: lista JSON dos projetos que as ferramentas podem acessar.
 - `JIRA_ENABLE_WRITE_OPERATIONS`: habilita explicitamente criação, comentários, transições e write-back.
+- `CONFLUENCE_SPACE_URL`: URL completa do espaço Confluence da base de conhecimento (sem valor padrão; configure para sua instância).
+- `CONFLUENCE_SPACE_KEY`: Chave do espaço Confluence (sem valor padrão; configure para seu espaço).
+- `CONFLUENCE_WEBHOOK_SECRET`: Segredo compartilhado para validação do webhook do Confluence.
+- `JIRA_REQUEST_DETAILS_FIELD_ID`: ID opcional do campo Jira para "Detalhes da Solicitação".
+- `KB_CACHE_DIR`: Diretório para persistência do cache RAG (padrão `.cache/kb`).
+- `KB_CACHE_TTL_SECONDS`: TTL do cache da base de conhecimento em segundos (padrão `3600`).
+- `KB_MIN_CONFIDENCE_SCORE`: Limiar de confiança para validação de respostas encontradas (padrão `0.35`).
+- `KB_HUMAN_ESCALATION_TEAM`: Nome da equipe humana de escalação quando a dúvida não for respondida (padrão `Equipe Comercial Humana`).
 
 O modo de escrita é **desabilitado por padrão**, mesmo quando as credenciais estão presentes.
 Defina `JIRA_ENABLE_WRITE_OPERATIONS=true` apenas depois de validar o projeto e os IDs de transição
@@ -245,17 +305,61 @@ com o backend local. Esse alvo define as variáveis Ollama para o processo sem a
 ou sobrescrever credenciais locais; para usar outro modelo, defina `OLLAMA_MODEL_NAME` antes do
 comando.
 
-### Ferramentas correspondentes aos manifestos
+### Ferramentas comerciais e avaliação de leads
 
-As 18 operações dos manifestos estão expostas como function tools nomeadas e com argumentos
-validados. O agente não recebe acesso a URLs, métodos HTTP nem payloads Jira arbitrários:
+As operações comerciais estão expostas como function tools nomeadas e com argumentos
+validados. O agente não recebe acesso a URLs, métodos HTTP nem payloads Jira arbitrários.
+Para leads do projeto OP, o agente lê campos e comentários, procura no Assets o software
+informado pelo solicitante e atualiza o campo Jira `Fabricante`/`Manufacturer` se a relação
+for inequívoca. Se faltarem dados comerciais, publica um comentário para o lead/contato comercial e
+retoma a avaliação quando receber uma resposta. A proposta só é iniciada quando todos os
+nove campos exigidos pela transição estiverem disponíveis. A resposta é um comentário visível
+na issue OP; o envio de e-mail depende do esquema de notificações do projeto Jira. Todo comentário
+público sobre o lead e sua proposta deve ser escrito diretamente ao lead/contato comercial em tom
+cordial, natural e profissional, pois o Jira pode enviá-lo por e-mail. Isso inclui pedidos de dados,
+esclarecimentos e atualizações de andamento ou conclusão. Não se deve dirigir a mensagem ao operador
+Jira, expor detalhes técnicos internos, nem repetir cabeçalho ou assinatura: o Jira exibe a conta
+autenticada como autora.
+
+Se o campo Jira do fabricante não tiver o nome `Fabricante`, `Manufacturer` ou
+`Software manufacturer`, configure `JIRA_MANUFACTURER_FIELD_ID` com o ID de um campo
+editável. O conector grava uma string em campos de texto ou a referência de objeto em campos
+Assets; para estes últimos, o resultado do Assets precisa incluir o ID do objeto fabricante.
+Configure `JIRA_AGENT_ACCOUNT_ID` com o account ID Jira da conta de automação para detectar
+comentários próprios pelo autor. Quando esse ID não for configurado, o conector o consulta ao Jira
+para reconhecer comentários publicados pela conta autenticada.
 
 | Área | Ferramentas |
 |---|---|
-| Leads | `create_lead`, `get_lead_details`, `start_lead_work`, `transition_lead_to_proposal_item`, `generate_new_proposal` |
+| Leads | `create_lead`, `get_lead_details`, `get_latest_issue_comment`, `update_lead_manufacturer`, `start_lead_work`, `transition_lead_to_proposal_item`, `generate_new_proposal` |
 | Issues e itens da proposta | `get_issue_fields`, `find_proposal_items`, `get_proposal_item_values`, `send_item_to_purchasing`, `set_proposal_item_price` |
-| Comentários e anexos | `add_internal_comment`, `list_issue_attachments`, `download_issue_attachment` |
-| Assets | `get_assets_cloud_id`, `get_assets_workspaces`, `list_assets_schemas`, `get_assets_object_types`, `search_assets_products_by_manufacturer` |
+| Comentários e anexos | `add_internal_comment`, `add_public_comment`, `list_issue_attachments`, `download_issue_attachment` |
+| Assets | `get_assets_cloud_id`, `get_assets_workspaces`, `list_assets_schemas`, `get_assets_object_types`, `search_assets_products_by_manufacturer`, `search_assets_products_by_software` |
+| Base de Conhecimento e Dúvidas | `query_knowledge_base`, `escalate_to_human_group` |
+
+### Base de Conhecimento Confluence, RAG e Escalação Humana
+
+O agente conta com um mecanismo RAG para esclarecer dúvidas apresentadas pelo lead no momento da
+recepção (no campo `Detalhes da Solicitação` ou descrição) e quando o lead responde a comentários:
+
+1. **Espaço Confluence como Base de Conhecimento**:
+   - Configure `CONFLUENCE_SPACE_URL` ou `CONFLUENCE_BASE_URL` e `CONFLUENCE_SPACE_KEY` para sua instância; não há um espaço padrão.
+   - As credenciais de acesso herdam de `JIRA_API_EMAIL` e `JIRA_API_TOKEN` ou podem ser customizadas por `CONFLUENCE_API_EMAIL` e `CONFLUENCE_API_TOKEN`.
+
+2. **Cache local e RAG**:
+   - As páginas são particionadas em chunks com sobreposição e indexadas via algoritmo BM25 com normalização para português (remoção de acentos e stopwords).
+   - O cache em disco é persistido em `KB_CACHE_DIR` (padrão `.cache/kb`) e respeita o TTL em segundos (`KB_CACHE_TTL_SECONDS`).
+
+3. **Fallback direto durante atualização**:
+   - Quando o cache está em processo de atualização/sincronização (`is_updating`), qualquer consulta à ferramenta `query_knowledge_base` aciona automaticamente o fallback direto via Confluence CQL (`search_space_direct`), garantindo disponibilidade contínua sem respostas desatualizadas.
+
+4. **Atualização via Webhook**:
+   - O endpoint `/api/confluence-webhook` (POST) recebe eventos do Confluence (`page_created`, `page_updated`, etc.) e dispara a atualização assíncrona do cache da base de conhecimento.
+   - O endpoint `/api/kb-refresh` (GET/POST) permite sincronização manual sob demanda.
+
+5. **Escalação para Grupo de Humanos**:
+   - Caso a base de conhecimento não contenha resposta com similaridade suficiente (abaixo de `KB_MIN_CONFIDENCE_SCORE`), o agente aciona `escalate_to_human_group`.
+   - O lead é transferido para a equipe humana configurada (`KB_HUMAN_ESCALATION_TEAM`, `KB_HUMAN_ESCALATION_GROUP_ACCOUNT_ID`, `KB_HUMAN_ESCALATION_TRANSITION_ID`), com registro de nota interna detalhando o motivo e mensagem pública cordial ao cliente informando o encaminhamento a um consultor.
 
 `JIRA_TRANSITION_IDS` permite substituir os IDs de workflow dos manifestos. Os IDs fornecidos são
 específicos da instância original; confirme-os no workflow de destino. O download de anexos só
@@ -263,25 +367,36 @@ permite anexos pertencentes à issue indicada e tem limite configurável em
 `JIRA_ATTACHMENT_MAX_BYTES` (64 KiB por padrão). Notas adicionadas pela ferramenta são sempre
 internas. A pesquisa AQL usa `JIRA_ASSETS_PRODUCT_OBJECT_TYPE_ID` (157 por padrão).
 
+Quando configurado, `JIRA_ASSETS_ACCESS_TOKEN` é tentado primeiro como Bearer. Se Jira Assets
+responder `401 Unauthorized`, o conector tenta novamente com as credenciais Jira Basic já
+configuradas; sem token Assets, usa Basic diretamente. Se ambas as tentativas falharem, o erro
+é retornado explicitamente. Um `403 Forbidden` não aciona fallback, pois indica falta de
+permissão e não necessariamente falha de autenticação. Para reduzir consumo de tokens nas
+respostas do modelo, cada pesquisa AQL limita a página a cinco candidatos e retorna apenas ID,
+chave, nome e fabricante; o total e o indicador de mais resultados são preservados. Quando houver
+mais resultados ou nomes ambíguos, o agente deve pedir esclarecimentos, não escolher um produto
+por suposição.
+
 Para chamadas Jira Assets, configure `JIRA_ASSETS_CLOUD_ID` e `JIRA_ASSETS_WORKSPACE_ID` para
 evitar descoberta automática. Se houver um único workspace, o conector pode descobri-lo. A API
 Assets usa `JIRA_ASSETS_ACCESS_TOKEN` como Bearer quando fornecido; caso contrário, usa o API token
 Jira configurado, somente contra o host Atlassian fixo `api.atlassian.com`.
 
-O recurso Terraform atual cria a conta AI Services e o deployment do modelo, mas não cria um
-projeto Foundry. Crie/seleciona o projeto no Foundry e informe seu endpoint exato em
-`azure_ai_project_endpoint` no Terraform ou `AZURE_AI_PROJECT_ENDPOINT` localmente. A antiga
+O Terraform usa um projeto Foundry e um deployment de modelo existentes; ele não cria o projeto.
+Informe o endpoint em `azure_ai_project_endpoint`, o deployment em
+`azure_ai_model_deployment_name` e o Resource ID ARM da conta AI Services em
+`azure_ai_services_id`, para que o RBAC da Managed Identity seja aplicado à conta correta. A antiga
 `AZURE_AI_PROJECT_CONNECTION_STRING` é aceita apenas como fallback de compatibilidade; prefira o
 endpoint explícito do projeto. Para o Hosted Agent, `FOUNDRY_PROJECT_ENDPOINT` também é aceito
 como alias pelo runtime.
 
 Crie um API token Atlassian para uma conta de agente com as permissões necessárias para consultar e editar
 issues, adicionar notas internas e executar transições no Jira. Localmente,
-guarde o token apenas no `.env` ou `local.settings.json` (ambos ignorados pelo Git). No Terraform,
-informe `jira_api_email` e `jira_api_token`; o token será armazenado no Key Vault e referenciado
-pela Function App. Embora o Terraform marque o token como sensível, ele também pode constar no
-state; use backend de state protegido e nunca versione state ou `terraform.tfvars`. Configure
-account IDs, por exemplo:
+guarde os tokens apenas no `.env` ou `local.settings.json` (ambos ignorados pelo Git). No Terraform,
+`jira_api_email`, `jira_api_token` e `jira_assets_access_token` são configurados; os tokens são
+armazenados no Key Vault e referenciados pela Function App. Embora o Terraform marque os tokens
+como sensíveis, eles também podem constar no state; use backend de state protegido e nunca versione
+state ou `terraform.tfvars`. Configure account IDs, por exemplo:
 
 ```json
 {"Cloud-Platform": "account-id-do-jira", "ServiceDesk-L1": "outro-account-id"}
@@ -316,36 +431,103 @@ http://localhost:7071/api/jira-webhook
 
 ## 🔐 Configuração do Webhook no Jira
 
+Para consultar a URL real da Function App implantada e validar se ela está online:
+
+```bash
+./scripts/get-webhook-endpoint.sh
+```
+
+Para obter apenas a URL (útil para copiar ou scripts de automação):
+
+```bash
+./scripts/get-webhook-endpoint.sh --url-only
+```
+
+### Passo a passo no Jira
+
 1. No Jira, acesse **Configurações (Jira Settings)** > **Sistema (System)** > **Webhooks** (`/plugins/servlet/webhooks`).
 2. Clique em **Create a Webhook**.
-3. **URL**: `https://<sua-function-app>.azurewebsites.net/api/jira-webhook`
+3. **URL**: Informe a URL retornada pelo script (`https://<sua-function-app>.azurewebsites.net/api/jira-webhook`).
 4. Em **Headers**, adicione:
    - Header Name: `X-Atlassian-Webhook-Secret`
    - Value: `<valor-do-JIRA_WEBHOOK_SECRET>`
-5. Em **Events**, marque:
-   - **Issue**: `created` e `updated`.
-   - JQL recomendado: `project = "OP"` (para restringir aos registros comerciais deste fluxo).
-6. Salve o webhook.
+5. Em **Scope / JQL**:
+   - `project = "OP"` (restringe o disparo exclusivamente às oportunidades/leads comerciais tratados pelo agente).
+6. Em **Events** (Eventos necessários para autonomia total):
+
+| Categoria Jira | Evento na interface | Identificador aceito no payload | Papel na operação autônoma |
+|---|---|---|---|
+| **Issue** | **Created** | `jira:issue_created` / `issue_created` | Ativação inicial quando um novo lead comercial é cadastrado no projeto OP. O agente avalia os campos, busca software no Assets, atualiza o fabricante e define o próximo passo. |
+| **Issue** | **Updated** | `jira:issue_updated` / `issue_updated` | Dispara quando campos ou status do lead/oportunidade são alterados no Jira, permitindo reavaliação contínua do fluxo de proposta. |
+| **Comment** | **Created** | `comment_created` / `jira:issue_comment_created` | **Essencial para diálogo e autonomia**: quando o solicitante responde às perguntas do agente fornecendo dados pendentes (ex: prazos, produtos, quantidades), o agente retoma o fluxo automaticamente sem intervenção humana. Comentários criados pelo próprio agente são detectados e ignorados automaticamente para evitar loops. |
+
+> **Nota de configuração:** Certifique-se de marcar tanto os eventos de **Issue** (`created` e `updated`) quanto de **Comment** (`created`). Sem o evento de comentário, o agente não saberá quando o cliente responder às solicitações de esclarecimento.
+
+7. Salve o webhook.
 
 ---
 
 ## 🏗️ Provisionamento com Terraform
 
-Para criar os recursos na Azure (Resource Group, AI Foundry, Key Vault, Storage e Function App com Managed Identity):
+O Terraform configura uma Function App Linux no plano **Flex Consumption (`FC1`)**, usando o
+projeto Foundry provisionado pelo mesmo módulo Terraform. A infraestrutura inclui Key Vault,
+Storage Account, container privado para o pacote de deployment, identidade gerenciada de usuário
+para acessar esse pacote e identidade gerenciada de sistema para Foundry e Key Vault.
 
 ```bash
 cd terraform
-cp terraform.tfvars.example terraform.tfvars
+test -f terraform.tfvars || cp terraform.tfvars.example terraform.tfvars
 # Edite as variáveis conforme desejado em terraform.tfvars
-
-terraform init
-terraform plan
-terraform apply
 ```
 
+O `terraform.tfvars` local gerado a partir de `local.settings.json` é ignorado pelo Git. O Terraform
+cria uma conta Azure AI Services, um projeto Foundry e um deployment GPT-5 na assinatura indicada
+por `subscription_id`; o endpoint e o Resource ID usados pelo app são derivados desses recursos.
+O deployment usa `GlobalStandard` com capacidade inicial de 50 mil tokens por minuto.
+
+Antes de qualquer implantação futura, confirme:
+
+- A quota/capacidade **Flex Consumption** está disponível na região escolhida; a quota
+  anterior de `Y1` não confirma disponibilidade de `FC1`.
+- O Terraform atribui **Key Vault Secrets Officer** à identidade usada pelo AzureRM, no escopo do
+  novo Key Vault, para criar os segredos com RBAC habilitado.
+- A identidade usada pelo Terraform pode criar atribuições RBAC nos escopos do Storage Account e
+  conta Foundry e Key Vault. `Contributor` sozinho não concede `roleAssignments/write`; use
+  `Role Based Access Control Administrator`, `User Access Administrator` ou `Owner` no escopo
+  adequado.
+- O state do Terraform está protegido: ele pode conter os segredos Jira e a connection string da
+  Storage Account usada pelo host de Functions.
+
+Antes do `apply`, confirme a quota/capacidade e revise o plano; a implantação requer aprovação
+explícita:
+
+```bash
+terraform -chdir=terraform init
+terraform -chdir=terraform validate
+terraform -chdir=terraform plan -input=false
+# Após revisar o plano: terraform -chdir=terraform apply
+```
+
+O repositório usa o backend local do Terraform: `terraform.tfstate` pode conter tokens e outros
+valores sensíveis e não é versionado. Em um clone novo, **não aplique** sem recuperar com segurança
+o state correspondente ou importar os recursos existentes; para uso compartilhado, configure um
+backend remoto Azure Storage antes de operar a infraestrutura. O `terraform apply` provisiona
+recursos e configurações, mas não publica o código Python da Function nem cria uma nova versão do
+Hosted Agent. Publique o código da Function com `func azure functionapp publish` e o Hosted Agent
+com `azd deploy`, conforme [DEPLOYMENT.md](./DEPLOYMENT.md).
+
 O Terraform configurará automaticamente as atribuições de RBAC:
-- **Cognitive Services OpenAI User** para a Managed Identity da Function App no serviço do Foundry.
-- **Key Vault Secrets User** para a Function App acessar segredos com segurança.
+- **Key Vault Secrets Officer** para a identidade de implantação escrever os segredos no vault.
+- **Storage Blob Data Contributor** para a identidade gerenciada de usuário acessar o container de deployment.
+- **Cognitive Services OpenAI User** para a Managed Identity da Function App na conta Foundry informada.
+- **Key Vault Secrets User** para a Function App acessar os segredos com segurança.
+
+Tokens e segredos marcados como sensíveis podem ser gravados no state do Terraform. Use um backend
+protegido e nunca versione `terraform.tfvars` ou arquivos de state.
+
+O Terraform provisiona os recursos da Function App, mas não publica o código Python. Depois do
+provisionamento, publique o código com Azure Functions Core Tools (`func azure functionapp publish
+<function-app-name>`) e configure o webhook Jira para a URL de saída `webhook_endpoint_url`.
 
 ---
 
@@ -364,7 +546,8 @@ Este projeto é desenvolvido para uso interno de integração entre Microsoft Fo
 
 ## Foundry Toolkit Agent Inspector
 
-O Hosted Agent (`src/hosted_agent/main.py`) é um servidor HTTP. O `agent-dev-cli`
-está no grupo `dev` do `pyproject.toml` (`uv sync`). No VS Code, use F5 com
-"Attach to Foundry Hosted Agent": a task sobe `agentdev run` na porta 8088 com
-debugpy na 5679, e o Inspector abre pelo Foundry Toolkit.
+O Hosted Agent (`src/hosted_agent/main.py`) inicia um servidor HTTP do protocolo Invocations.
+O `agent-dev-cli` está no grupo `dev` do `pyproject.toml`; instale-o com
+`uv sync --all-extras --group dev` (ou `make install`). No VS Code, pressione F5 e escolha
+**Attach to Foundry Hosted Agent**: a task executa `agentdev run` na porta 8088 com debugpy na
+porta 5679, abre o Agent Inspector e encerra as tasks quando a sessão de depuração termina.

@@ -4,8 +4,8 @@ output "resource_group_name" {
 }
 
 output "ai_services_endpoint" {
-  description = "Endpoint do serviço Azure AI Foundry"
-  value       = module.ai_foundry.ai_services_endpoint
+  description = "Endpoint do projeto Azure AI Foundry provisionado"
+  value       = module.ai_foundry.project_endpoint
 }
 
 output "function_app_name" {

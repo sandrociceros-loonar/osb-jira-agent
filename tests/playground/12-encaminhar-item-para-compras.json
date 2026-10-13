@@ -1,0 +1,11 @@
+{
+  "webhookEvent": "jira:issue_updated",
+  "issue": {
+    "id": "651204",
+    "key": "OP-8402",
+    "fields": {
+      "summary": "Teste Playground: encaminhar item para Compras",
+      "description": "No sandbox, encaminhe o item de proposta relacionado a OP-8402 para Compras somente após identificar o item e obter do Jira Assets um produto inequívoco. Use exclusivamente dados confirmados: quantidade 3, classificação da cotação conforme opção válida no Jira, período de 12 meses e tipo de preço conforme opção válida no Jira. Confira os valores atuais e a transição aplicável. Se produto, classificação, período, tipo de preço ou transição não puder ser confirmado, não execute a escrita e pergunte o que falta."
+    }
+  }
+}

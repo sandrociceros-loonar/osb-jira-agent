@@ -28,11 +28,20 @@ ENV/
 
 # Azure Functions
 local.settings.json
+local.settings.*.json
 .azurefunctions/
+
+# Local build output and Azure Storage emulator state
+/bin/
+/obj/
+/__azurite_db*.json
+/__blobstorage__/
+/__queuestorage__/
 
 # Environment files
 .env
-.env.local
+.env.*
+!.env.example
 
 # Testing & Linting
 .pytest_cache/
@@ -45,6 +54,7 @@ htmlcov/
 **/.terraform/*
 *.tfstate
 *.tfstate.*
+tfplan
 crash.log
 crash.*.log
 *.tfvars

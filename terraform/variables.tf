@@ -4,6 +4,11 @@ variable "environment" {
   default     = "dev"
 }
 
+variable "subscription_id" {
+  description = "ID da assinatura Azure onde os recursos da aplicação serão criados"
+  type        = string
+}
+
 variable "location" {
   description = "Região da Azure para todos os recursos"
   type        = string
@@ -34,10 +39,28 @@ variable "jira_project_key" {
   default     = "ITSM"
 }
 
-variable "azure_ai_project_endpoint" {
-  description = "Endpoint completo de um projeto Microsoft Foundry já criado"
+variable "azure_ai_model_deployment_name" {
+  description = "Nome do deployment GPT no Azure AI Foundry"
   type        = string
-  default     = ""
+  default     = "gpt-5"
+}
+
+variable "azure_ai_model_name" {
+  description = "Nome do modelo OpenAI implantado no Azure AI Foundry"
+  type        = string
+  default     = "gpt-5"
+}
+
+variable "azure_ai_model_version" {
+  description = "Versão do modelo OpenAI implantado no Azure AI Foundry"
+  type        = string
+  default     = "2025-08-07"
+}
+
+variable "azure_ai_model_capacity" {
+  description = "Capacidade GlobalStandard em milhares de tokens por minuto"
+  type        = number
+  default     = 50
 }
 
 variable "jira_allowed_project_keys" {
@@ -99,7 +122,55 @@ variable "jira_webhook_secret" {
   description = "Segredo compartilhado para validação do webhook"
   type        = string
   sensitive   = true
-  default     = "change-me-in-production"
+}
+
+variable "jira_webhook_secret_header" {
+  description = "Cabeçalho HTTP usado pelo Jira para enviar o segredo do webhook"
+  type        = string
+  default     = "X-Atlassian-Webhook-Secret"
+}
+
+variable "jira_assets_access_token" {
+  description = "Token OAuth das APIs Jira Assets armazenado no Key Vault"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "jira_assets_cloud_id" {
+  description = "Cloud ID do Jira usado pelo conector Assets"
+  type        = string
+  default     = ""
+}
+
+variable "jira_assets_workspace_id" {
+  description = "Workspace ID do Jira Assets"
+  type        = string
+  default     = ""
+}
+
+variable "jira_assets_product_object_type_id" {
+  description = "Object type ID de produtos consultado pela pesquisa AQL"
+  type        = string
+  default     = "157"
+}
+
+variable "azure_ai_max_tool_calls" {
+  description = "Limite total de chamadas de ferramentas por execução"
+  type        = number
+  default     = 16
+}
+
+variable "jira_attachment_max_bytes" {
+  description = "Limite de bytes para anexos disponibilizados ao modelo"
+  type        = number
+  default     = 65536
+}
+
+variable "log_level" {
+  description = "Nível de logging da aplicação"
+  type        = string
+  default     = "INFO"
 }
 
 variable "tags" {

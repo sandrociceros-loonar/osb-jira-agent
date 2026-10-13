@@ -1,0 +1,11 @@
+{
+  "webhookEvent": "jira:issue_updated",
+  "issue": {
+    "id": "651204",
+    "key": "OP-8402",
+    "fields": {
+      "summary": "Teste Playground: pesquisar produto no Assets por fabricante",
+      "description": "Identifique o fabricante confirmado no lead ou no item da proposta e pesquise produtos no Jira Assets por esse fabricante. Relate os produtos e IDs retornados. Se o fabricante estiver ausente ou houver mais de um produto candidato sem critério de escolha claro, informe a pendência. Não encaminhe para Compras."
+    }
+  }
+}

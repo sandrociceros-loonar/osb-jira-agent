@@ -9,7 +9,8 @@
         "host": "localhost",
         "port": 5679
       },
-      "preLaunchTask": "Run Hosted Agent HTTP Server"
+      "preLaunchTask": "Open Agent Inspector",
+      "postDebugTask": "Terminate All Tasks"
     },
     {
       "name": "Attach to Python Functions",

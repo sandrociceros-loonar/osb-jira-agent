@@ -1,0 +1,11 @@
+{
+  "webhookEvent": "jira:issue_updated",
+  "issue": {
+    "id": "651204",
+    "key": "OP-8402",
+    "fields": {
+      "summary": "Teste Playground: avançar lead para item de proposta",
+      "description": "No sandbox, avance OP-8402 para a etapa de item da proposta somente se o usuário tiver pedido explicitamente essa transição e ela for válida para o estado atual. Consulte a issue e as transições disponíveis. Não invente IDs nem tente outra transição se essa não estiver disponível."
+    }
+  }
+}

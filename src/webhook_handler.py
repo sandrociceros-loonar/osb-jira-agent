@@ -17,22 +17,26 @@ ACCEPTED_EVENTS = {
     "jira:issue_updated",
     "issue_created",
     "issue_updated",
+    "comment_created",
+    "jira:issue_comment_created",
 }
 
 
 def process_jira_webhook(
     raw_body: bytes,
     headers: Mapping[str, str],
+    require_webhook_signature: bool = True,
 ) -> tuple[int, dict[str, object]]:
     """Authenticate, validate, and process a Jira webhook payload."""
-    try:
-        verify_jira_webhook(headers=headers, raw_body=raw_body)
-    except WebhookSecurityError as exc:
-        logger.warning("Falha de autenticação do webhook: %s", exc)
-        return 401, {"error": "Unauthorized", "details": str(exc)}
-    except Exception as exc:
-        logger.error("Erro inesperado durante validação de segurança: %s", exc)
-        return 500, {"error": "Internal server error during verification"}
+    if require_webhook_signature:
+        try:
+            verify_jira_webhook(headers=headers, raw_body=raw_body)
+        except WebhookSecurityError as exc:
+            logger.warning("Falha de autenticação do webhook: %s", exc)
+            return 401, {"error": "Unauthorized", "details": str(exc)}
+        except Exception as exc:
+            logger.error("Erro inesperado durante validação de segurança: %s", exc)
+            return 500, {"error": "Internal server error during verification"}
 
     try:
         payload = JiraWebhookPayload.model_validate(json.loads(raw_body))

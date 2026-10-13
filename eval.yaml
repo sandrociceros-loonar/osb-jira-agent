@@ -1,0 +1,18 @@
+name: osb-jira-agent
+agent:
+    name: osb-jira-agent
+    kind: hosted
+    version: "5"
+    config: .agent_configs/baseline/metadata.yaml
+dataset:
+    name: osb-jira-agent
+    version: "1.0"
+    local_uri: datasets/osb-jira-agent
+evaluators:
+    - name: osb-jira-agent
+      version: "1"
+      local_uri: evaluators/osb-jira-agent/rubric_dimensions.json
+options:
+    eval_model: gpt-5
+max_samples: 15
+trace_days: 1

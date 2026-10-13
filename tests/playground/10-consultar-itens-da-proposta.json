@@ -1,0 +1,11 @@
+{
+  "webhookEvent": "jira:issue_updated",
+  "issue": {
+    "id": "651204",
+    "key": "OP-8402",
+    "fields": {
+      "summary": "Teste Playground: consultar itens da proposta",
+      "description": "Localize os itens filhos de proposta associados a OP-8402 e relate suas chaves, etapas e valores relevantes que o Jira retornar. Não altere itens, preços ou status."
+    }
+  }
+}

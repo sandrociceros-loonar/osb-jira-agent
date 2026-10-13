@@ -4,10 +4,11 @@ import json
 
 import httpx
 import pytest
+from pydantic import ValidationError
 
 from src.config import Settings
 from src.jira.connector import JiraConnector, JiraConnectorError, get_jira_connector
-from src.jira.tools import JIRA_TOOLS
+from src.jira.tools import JIRA_TOOLS, ProposalArguments
 from src.models.agent_result import TriageCategory, TriageDecision, TriagePriority
 
 
@@ -18,6 +19,11 @@ def jira_settings(**overrides: object) -> Settings:
         "JIRA_API_TOKEN": "local-test-token",
         "JIRA_TEAM_ACCOUNT_IDS": {"Cloud-Platform": "account-123"},
         "JIRA_ENABLE_WRITE_OPERATIONS": True,
+        "JIRA_ALLOWED_PROJECT_KEYS": ["ITSM", "OP"],
+        "JIRA_LEAD_PROJECT_KEY": "OP",
+        "JIRA_LEAD_ISSUE_TYPE_ID": "12716",
+        "JIRA_ASSETS_CLOUD_ID": "",
+        "JIRA_ASSETS_WORKSPACE_ID": "",
     }
     values.update(overrides)
     return Settings(**values)
@@ -212,17 +218,21 @@ def test_connector_is_disabled_only_when_both_credentials_are_absent():
 
 
 def test_manifest_tool_registry_is_complete_and_write_tools_are_gated():
-    assert len(JIRA_TOOLS) == 18
-    assert len({tool.name for tool in JIRA_TOOLS}) == 18
+    assert len(JIRA_TOOLS) == 24
+    assert len({tool.name for tool in JIRA_TOOLS}) == 24
     with JiraConnector(
         jira_settings(JIRA_ENABLE_WRITE_OPERATIONS=False),
         transport=httpx.MockTransport(lambda request: httpx.Response(200, request=request)),
     ) as connector:
-        available_names = {
-            schema["name"] for schema in connector.available_tool_schemas()
-        }
+        available_names = {schema["name"] for schema in connector.available_tool_schemas()}
         assert "get_issue_fields" in available_names
         assert "search_assets_products_by_manufacturer" in available_names
+        assert "search_assets_products_by_software" in available_names
+        assert "get_latest_issue_comment" in available_names
+        assert "query_knowledge_base" in available_names
+        assert "escalate_to_human_group" not in available_names
+        assert "add_public_comment" not in available_names
+        assert "update_lead_manufacturer" not in available_names
         assert "create_lead" not in available_names
         assert "set_proposal_item_price" not in available_names
         with pytest.raises(JiraConnectorError, match="write operations are disabled"):
@@ -414,13 +424,55 @@ def test_get_issue_and_lead_tools_use_manifest_fields():
     assert [request.url.path for request in requests] == [
         "/rest/api/3/issue/OP-1",
         "/rest/api/3/issue/OP-2",
+        "/rest/api/3/issue/OP-2/comment",
         "/rest/api/3/issue/OP-3",
         "/rest/api/3/search/jql",
     ]
     assert requests[0].url.params["expand"] == "names,editmeta,transitions"
     assert requests[1].url.params["fields"] == JiraConnector.LEAD_DETAILS_FIELDS
-    assert requests[2].url.params["fields"] == JiraConnector.PROPOSAL_ITEM_FIELDS
-    assert requests[3].url.params["jql"] == "parent=OP-4"
+    assert requests[2].url.params["orderBy"] == "created"
+    assert requests[3].url.params["fields"] == JiraConnector.PROPOSAL_ITEM_FIELDS
+    assert requests[4].url.params["jql"] == "parent=OP-4"
+
+
+def test_get_lead_details_paginates_complete_comment_history():
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.url.path.endswith("/comment"):
+            start_at = int(request.url.params["startAt"])
+            if start_at == 0:
+                return httpx.Response(
+                    200,
+                    json={
+                        "startAt": 0,
+                        "maxResults": 100,
+                        "total": 2,
+                        "comments": [{"id": "1", "body": "Olá"}],
+                    },
+                    request=request,
+                )
+            return httpx.Response(
+                200,
+                json={
+                    "startAt": 1,
+                    "maxResults": 100,
+                    "total": 2,
+                    "comments": [{"id": "2", "body": "Pagamento em 30 dias"}],
+                },
+                request=request,
+            )
+        return httpx.Response(200, json={"fields": {}}, request=request)
+
+    with JiraConnector(
+        jira_settings(),
+        transport=httpx.MockTransport(handler),
+    ) as connector:
+        result = connector.get_lead_details("OP-1")
+
+    assert [comment["id"] for comment in result["comments"]] == ["1", "2"]
+    assert [request.url.params.get("startAt") for request in requests[1:]] == ["0", "1"]
 
 
 def test_attachment_download_is_scoped_to_issue_and_limited():
@@ -494,6 +546,275 @@ def test_add_comment_is_always_internal():
     }
 
 
+def test_public_comment_is_visible_to_requester_without_repeating_account_name():
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(201, json={"id": "comment-public"}, request=request)
+
+    with JiraConnector(
+        jira_settings(),
+        transport=httpx.MockTransport(handler),
+    ) as connector:
+        result = connector.execute_tool(
+            "add_public_comment",
+            {"issue_key": "OP-1", "comment": "Informe a forma de pagamento."},
+        )
+
+    assert result == {"id": "comment-public", "public": True}
+    assert requests[0].url.path == "/rest/api/2/issue/OP-1/comment"
+    assert json.loads(requests[0].content)["body"] == "Informe a forma de pagamento."
+
+
+def test_public_comment_removes_repeated_legacy_agent_headers():
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(201, json={"id": "comment-public"}, request=request)
+
+    with JiraConnector(
+        jira_settings(),
+        transport=httpx.MockTransport(handler),
+    ) as connector:
+        connector.add_public_comment(
+            "OP-1",
+            f"{JiraConnector.AGENT_COMMENT_PREFIX}\n\n"
+            f"{JiraConnector.AGENT_COMMENT_PREFIX}\n\n"
+            "Olá, Maria! Poderia nos informar a data prevista?",
+        )
+
+    assert json.loads(requests[0].content)["body"] == (
+        "Olá, Maria! Poderia nos informar a data prevista?"
+    )
+
+
+def test_public_comment_rejects_legacy_header_without_message():
+    with JiraConnector(
+        jira_settings(),
+        transport=httpx.MockTransport(
+            lambda request: pytest.fail("Empty comments must not be sent to Jira")
+        ),
+    ) as connector:
+        with pytest.raises(JiraConnectorError, match="must contain message text"):
+            connector.add_public_comment("OP-1", JiraConnector.AGENT_COMMENT_PREFIX)
+
+
+def test_authenticated_user_comment_uses_configured_account_id():
+    with JiraConnector(
+        jira_settings(JIRA_AGENT_ACCOUNT_ID="connected-account"),
+        transport=httpx.MockTransport(
+            lambda request: pytest.fail("Should not need to resolve the current account")
+        ),
+    ) as connector:
+        assert connector.is_authenticated_user_comment(
+            {"author": {"accountId": "connected-account"}}
+        )
+        assert not connector.is_authenticated_user_comment(
+            {"author": {"accountId": "another-account"}}
+        )
+
+
+def test_authenticated_user_comment_resolves_and_caches_current_account():
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200, json={"accountId": "connected-account"}, request=request)
+
+    with JiraConnector(
+        jira_settings(),
+        transport=httpx.MockTransport(handler),
+    ) as connector:
+        comment = {"author": {"accountId": "connected-account"}}
+        assert connector.is_authenticated_user_comment(comment)
+        assert connector.is_authenticated_user_comment(comment)
+
+    assert len(requests) == 1
+    assert requests[0].url.path == "/rest/api/3/myself"
+
+
+def test_latest_comment_query_returns_comment_and_orders_newest_first():
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(
+            200,
+            json={"comments": [{"id": "12", "body": "Nova resposta"}]},
+            request=request,
+        )
+
+    with JiraConnector(
+        jira_settings(),
+        transport=httpx.MockTransport(handler),
+    ) as connector:
+        result = connector.execute_tool(
+            "get_latest_issue_comment",
+            {"issue_key": "OP-1"},
+        )
+
+    assert result["latest_comment"]["id"] == "12"
+    assert requests[0].url.params["orderBy"] == "-created"
+    assert requests[0].url.params["maxResults"] == "1"
+
+
+def test_update_lead_manufacturer_discovers_editable_text_field():
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.method == "GET":
+            return httpx.Response(
+                200,
+                json={
+                    "names": {"customfield_12345": "Fabricante"},
+                    "editmeta": {
+                        "fields": {
+                            "customfield_12345": {"schema": {"type": "string"}},
+                        }
+                    },
+                    "fields": {
+                        "issuetype": {"id": "12716"},
+                        "customfield_12345": None,
+                    },
+                },
+                request=request,
+            )
+        return httpx.Response(204, request=request)
+
+    with JiraConnector(
+        jira_settings(),
+        transport=httpx.MockTransport(handler),
+    ) as connector:
+        result = connector.execute_tool(
+            "update_lead_manufacturer",
+            {"issue_key": "OP-1", "manufacturer_name": "Acme Software"},
+        )
+
+    assert result == {
+        "issue_key": "OP-1",
+        "field_id": "customfield_12345",
+        "manufacturer": "Acme Software",
+        "updated": True,
+    }
+    assert [request.method for request in requests] == ["GET", "PUT"]
+    assert json.loads(requests[1].content) == {"fields": {"customfield_12345": "Acme Software"}}
+
+
+def test_update_lead_manufacturer_sets_assets_reference_from_assets_id():
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.method == "GET":
+            return httpx.Response(
+                200,
+                json={
+                    "names": {"customfield_12345": "Fabricante"},
+                    "editmeta": {
+                        "fields": {
+                            "customfield_12345": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": "com.riadalabs.jira.plugins.insight:rlabs-customfield-object",
+                                }
+                            }
+                        }
+                    },
+                    "fields": {
+                        "issuetype": {"id": "12716"},
+                        "customfield_12345": None,
+                    },
+                },
+                request=request,
+            )
+        return httpx.Response(204, request=request)
+
+    with JiraConnector(
+        jira_settings(JIRA_ASSETS_WORKSPACE_ID="workspace-test"),
+        transport=httpx.MockTransport(handler),
+    ) as connector:
+        connector.execute_tool(
+            "update_lead_manufacturer",
+            {
+                "issue_key": "OP-1",
+                "manufacturer_name": "Acme Software",
+                "manufacturer_object_id": "6195",
+            },
+        )
+
+    assert json.loads(requests[1].content) == {
+        "fields": {
+            "customfield_12345": [
+                {
+                    "workspaceId": "workspace-test",
+                    "id": "workspace-test:6195",
+                    "objectId": "6195",
+                }
+            ]
+        }
+    }
+
+
+def test_update_lead_manufacturer_rejects_non_lead_project_before_request():
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200, request=request)
+
+    with JiraConnector(
+        jira_settings(),
+        transport=httpx.MockTransport(handler),
+    ) as connector:
+        with pytest.raises(JiraConnectorError, match="restricted to the configured lead project"):
+            connector.execute_tool(
+                "update_lead_manufacturer",
+                {"issue_key": "ITSM-1", "manufacturer_name": "Acme Software"},
+            )
+
+    assert requests == []
+
+
+def test_update_lead_manufacturer_rejects_non_lead_issue_type():
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(
+            200,
+            json={
+                "names": {"customfield_12345": "Fabricante"},
+                "editmeta": {
+                    "fields": {
+                        "customfield_12345": {"schema": {"type": "string"}},
+                    }
+                },
+                "fields": {"issuetype": {"id": "1"}, "customfield_12345": None},
+            },
+            request=request,
+        )
+
+    with JiraConnector(
+        jira_settings(),
+        transport=httpx.MockTransport(handler),
+    ) as connector:
+        with pytest.raises(JiraConnectorError, match="restricted to the configured lead issue"):
+            connector.execute_tool(
+                "update_lead_manufacturer",
+                {"issue_key": "OP-1", "manufacturer_name": "Acme Software"},
+            )
+
+    assert [request.method for request in requests] == ["GET"]
+
+
+def test_proposal_tool_requires_all_fields_to_start_generation():
+    with pytest.raises(ValidationError):
+        ProposalArguments.model_validate({"issue_key": "OP-1"})
+
+
 def test_assets_aql_uses_fixed_host_bearer_auth_and_escaped_manufacturer():
     requests: list[httpx.Request] = []
 
@@ -525,6 +846,163 @@ def test_assets_aql_uses_fixed_host_bearer_auth_and_escaped_manufacturer():
     query = json.loads(request.content)["qlQuery"]
     assert query.startswith("objectTypeId = 157 AND Fabricante like ")
     assert '\\" OR objectTypeId = 2 OR Fabricante like \\"' in query
+
+
+def test_assets_retries_with_jira_api_token_after_bearer_unauthorized():
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.headers.get("authorization", "").startswith("Bearer "):
+            return httpx.Response(401, request=request)
+        return httpx.Response(200, json={"objectEntries": []}, request=request)
+
+    with JiraConnector(
+        jira_settings(
+            JIRA_ASSETS_ACCESS_TOKEN="rejected-bearer-token",
+            JIRA_ASSETS_CLOUD_ID="cloud-test",
+            JIRA_ASSETS_WORKSPACE_ID="workspace-test",
+        ),
+        transport=httpx.MockTransport(handler),
+    ) as connector:
+        result = connector.execute_tool(
+            "search_assets_products_by_software",
+            {"software_name": "Example Software"},
+        )
+
+    assert result["objectEntries"] == []
+    assert len(requests) == 2
+    assert requests[0].headers["authorization"].startswith("Bearer ")
+    assert requests[1].headers["authorization"].startswith("Basic ")
+    assert requests[0].url == requests[1].url
+    assert requests[0].content == requests[1].content
+
+
+def test_assets_reports_unauthorized_when_both_auth_methods_fail():
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(401, request=request)
+
+    with JiraConnector(
+        jira_settings(
+            JIRA_ASSETS_ACCESS_TOKEN="rejected-bearer-token",
+            JIRA_ASSETS_CLOUD_ID="cloud-test",
+            JIRA_ASSETS_WORKSPACE_ID="workspace-test",
+        ),
+        transport=httpx.MockTransport(handler),
+    ) as connector:
+        with pytest.raises(JiraConnectorError, match="HTTP 401"):
+            connector.execute_tool(
+                "search_assets_products_by_software",
+                {"software_name": "Example Software"},
+            )
+
+    assert len(requests) == 2
+    assert requests[0].headers["authorization"].startswith("Bearer ")
+    assert requests[1].headers["authorization"].startswith("Basic ")
+
+
+def test_assets_aql_searches_by_software_name_with_escaped_value():
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200, json={"objectEntries": []}, request=request)
+
+    with JiraConnector(
+        jira_settings(
+            JIRA_ASSETS_ACCESS_TOKEN="assets-bearer-test",
+            JIRA_ASSETS_CLOUD_ID="cloud-test",
+            JIRA_ASSETS_WORKSPACE_ID="workspace-test",
+        ),
+        transport=httpx.MockTransport(handler),
+    ) as connector:
+        connector.execute_tool(
+            "search_assets_products_by_software",
+            {"software_name": 'Acme "Suite"'},
+        )
+
+    query = json.loads(requests[0].content)["qlQuery"]
+    assert query == 'objectTypeId = 157 AND Name like "Acme \\"Suite\\""'
+
+
+def test_assets_product_search_limits_and_compacts_results():
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.method == "GET":
+            return httpx.Response(
+                200,
+                json=[
+                    {"id": "1167", "name": "Fabricante"},
+                    {"id": "1153", "name": "Key"},
+                ],
+                request=request,
+            )
+        return httpx.Response(
+            200,
+            json={
+                "startAt": 0,
+                "maxResults": 5,
+                "total": 62,
+                "hasMoreResults": False,
+                "objectTypeAttributes": [{"id": "large-unneeded-metadata"}],
+                "values": [
+                    {
+                        "id": "6969",
+                        "objectKey": "CRM-6969",
+                        "label": "Actions for Jira Service Desk",
+                        "avatar": {"large": "unneeded"},
+                        "attributes": [
+                            {
+                                "objectTypeAttributeId": "1167",
+                                "objectAttributeValues": [
+                                    {"displayValue": "Atlassian", "value": "Atlassian"}
+                                ],
+                            },
+                            {
+                                "objectTypeAttributeId": "1153",
+                                "objectAttributeValues": [{"displayValue": "CRM-6969"}],
+                            },
+                        ],
+                    }
+                ],
+            },
+            request=request,
+        )
+
+    with JiraConnector(
+        jira_settings(
+            JIRA_ASSETS_ACCESS_TOKEN="assets-bearer-test",
+            JIRA_ASSETS_CLOUD_ID="cloud-test",
+            JIRA_ASSETS_WORKSPACE_ID="workspace-test",
+        ),
+        transport=httpx.MockTransport(handler),
+    ) as connector:
+        result = connector.execute_tool(
+            "search_assets_products_by_software",
+            {"software_name": "Jira"},
+        )
+
+    assert requests[0].method == "POST"
+    assert requests[0].url.params["startAt"] == "0"
+    assert requests[0].url.params["maxResults"] == "5"
+    assert requests[1].method == "GET"
+    assert requests[1].url.path.endswith("/v1/objecttype/157/attributes")
+    assert result["total"] == 62
+    assert result["hasMoreResults"] is True
+    assert "objectTypeAttributes" not in result
+    assert result["values"] == [
+        {
+            "id": "6969",
+            "objectKey": "CRM-6969",
+            "name": "Actions for Jira Service Desk",
+            "manufacturer": ["Atlassian"],
+        }
+    ]
 
 
 def test_assets_schema_list_and_object_types_use_assets_api_and_pagination():

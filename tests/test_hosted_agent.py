@@ -1,12 +1,15 @@
 """Tests for the Microsoft Foundry hosted-agent adapter."""
 
 import asyncio
+import json
+import time
 from unittest.mock import patch
 
 from starlette.requests import Request
+from starlette.responses import StreamingResponse
 
 from src.config import Settings
-from src.hosted_agent.main import handle_invocation
+from src.hosted_agent.main import app, handle_invocation
 
 
 def test_foundry_project_endpoint_alias():
@@ -16,8 +19,8 @@ def test_foundry_project_endpoint_alias():
     assert settings.azure_ai_project_endpoint == "https://example.services.ai.azure.com/project"
 
 
-def test_invocation_delegates_to_shared_webhook_handler():
-    """Forward the raw payload and headers to the shared Jira webhook processor."""
+def test_invocation_streams_shared_webhook_result():
+    """Keep long-running Foundry invocations alive and return the shared handler result."""
     raw_body = b'{"webhookEvent":"jira:issue_created"}'
     received = False
 
@@ -33,20 +36,44 @@ def test_invocation_delegates_to_shared_webhook_handler():
             "type": "http",
             "method": "POST",
             "path": "/invocations",
-            "headers": [(b"x-atlassian-webhook-secret", b"shared-secret")],
+            "headers": [],
         },
         receive,
     )
 
-    with patch(
-        "src.hosted_agent.main.process_jira_webhook",
-        return_value=(202, {"status": "accepted"}),
-    ) as process_webhook:
+    def process_webhook(*args, **kwargs):
+        time.sleep(0.05)
+        return 202, {"status": "accepted"}
+
+    with (
+        patch(
+            "src.hosted_agent.main.process_jira_webhook",
+            side_effect=process_webhook,
+        ) as process_webhook,
+        patch("src.hosted_agent.main.configure_jira_runtime_secrets") as configure_secrets,
+    ):
         response = asyncio.run(handle_invocation(request))
 
-    assert response.status_code == 202
-    assert response.body == b'{"status":"accepted"}'
+        previous_interval = app.config.sse_keepalive_interval
+        app.config.sse_keepalive_interval = 0.01
+
+        async def read_response():
+            chunks = [chunk async for chunk in response.body_iterator]
+            return b"".join(chunk.encode() if isinstance(chunk, str) else chunk for chunk in chunks)
+
+        try:
+            response = app._wrap_streaming_response(response, "invocation-test", "session-test")
+            response_body = asyncio.run(read_response())
+        finally:
+            app.config.sse_keepalive_interval = previous_interval
+
+    assert isinstance(response, StreamingResponse)
+    assert response.media_type == "text/event-stream"
+    assert b": keep-alive\n\n" in response_body
+    assert json.loads(response_body.splitlines()[-1]) == {"status": "accepted"}
+    configure_secrets.assert_called_once()
     process_webhook.assert_called_once()
     forwarded_body, forwarded_headers = process_webhook.call_args.args
     assert forwarded_body == raw_body
-    assert forwarded_headers["x-atlassian-webhook-secret"] == "shared-secret"
+    assert not forwarded_headers
+    assert process_webhook.call_args.kwargs["require_webhook_signature"] is False

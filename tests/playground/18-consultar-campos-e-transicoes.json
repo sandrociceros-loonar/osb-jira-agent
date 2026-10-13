@@ -1,0 +1,11 @@
+{
+  "webhookEvent": "jira:issue_updated",
+  "issue": {
+    "id": "651204",
+    "key": "OP-8402",
+    "fields": {
+      "summary": "Teste Playground: inspecionar campos e transições",
+      "description": "Consulte os campos, metadados de edição e transições disponíveis para OP-8402. Resuma o tipo, status atual, campos comerciais presentes e transições válidas. Não atualize campos nem execute transições."
+    }
+  }
+}

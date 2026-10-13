@@ -34,6 +34,7 @@ azure-core==1.41.0
     #   azure-ai-projects
     #   azure-core-tracing-opentelemetry
     #   azure-identity
+    #   azure-keyvault-secrets
     #   azure-monitor-opentelemetry-exporter
     #   azure-storage-blob
     #   microsoft-opentelemetry
@@ -48,6 +49,8 @@ azure-identity==1.26.0
     #   azure-ai-projects
     #   azure-monitor-opentelemetry-exporter
     #   osb-jira-agent
+azure-keyvault-secrets==4.11.3
+    # via osb-jira-agent
 azure-monitor-opentelemetry-exporter==1.0.0b58
     # via microsoft-opentelemetry
 azure-storage-blob==12.31.0
@@ -111,6 +114,7 @@ isodate==0.7.2
     # via
     #   azure-ai-agentserver-core
     #   azure-ai-projects
+    #   azure-keyvault-secrets
     #   azure-storage-blob
     #   msrest
 jiter==0.17.0
@@ -330,6 +334,7 @@ typing-extensions==4.16.0
     #   azure-ai-projects
     #   azure-core
     #   azure-identity
+    #   azure-keyvault-secrets
     #   azure-storage-blob
     #   httpx2
     #   openai

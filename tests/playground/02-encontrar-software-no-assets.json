@@ -1,0 +1,11 @@
+{
+  "webhookEvent": "jira:issue_updated",
+  "issue": {
+    "id": "651204",
+    "key": "OP-8402",
+    "fields": {
+      "summary": "Teste Playground: localizar software no Assets",
+      "description": "Leia os campos e comentários do lead, identifique o nome do software explicitamente informado pelo solicitante e pesquise esse software no Jira Assets. Informe os dados e o fabricante apenas se vierem de um resultado inequívoco do Assets. Não use o nome do software como fabricante e não altere a issue."
+    }
+  }
+}

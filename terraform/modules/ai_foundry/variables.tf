@@ -19,21 +19,27 @@ variable "project_name" {
 }
 
 variable "model_deployment_name" {
-  description = "Nome do deployment do modelo (ex: gpt-4o)"
+  description = "Nome do deployment do modelo"
   type        = string
-  default     = "gpt-4o"
+  default     = "gpt-5"
 }
 
 variable "model_name" {
-  description = "Modelo base da OpenAI no Foundry (ex: gpt-4o)"
+  description = "Modelo base da OpenAI no Foundry"
   type        = string
-  default     = "gpt-4o"
+  default     = "gpt-5"
 }
 
 variable "model_version" {
   description = "Versão do modelo no Foundry"
   type        = string
-  default     = "2024-08-06"
+  default     = "2025-08-07"
+}
+
+variable "model_capacity" {
+  description = "Capacidade GlobalStandard em milhares de tokens por minuto"
+  type        = number
+  default     = 50
 }
 
 variable "tags" {

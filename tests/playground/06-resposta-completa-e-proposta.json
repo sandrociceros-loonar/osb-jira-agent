@@ -1,0 +1,20 @@
+{
+  "webhookEvent": "jira:issue_comment_created",
+  "issue": {
+    "id": "651204",
+    "key": "OP-8402",
+    "fields": {
+      "summary": "Teste Playground: dados completos para proposta",
+      "description": "No sandbox, reavalie o lead e todos os comentários. A resposta recebida fornece estes dados para a proposta: forecast 2026-11-30; probabilidade 70%; próximo follow-up 2026-10-20; prioridade Alta; faturamento Mensal; pagamento em 30 dias por transferência bancária; validade até 2026-11-30; informações da proposta: 3 licenças do software Solução QA Example para Empresa Exemplo QA. Gere uma única proposta apenas se os nove campos obrigatórios estiverem confirmados, o software e o fabricante forem inequívocos no Jira Assets e a atualização do fabricante estiver confirmada. Depois da confirmação de sucesso de generate_new_proposal, informe o lead/contato comercial em comentário público cordial e em tom comercial (não ao operador Jira); o Jira pode enviar o comentário por e-mail, então não inclua detalhes internos, cabeçalho automático ou assinatura. Não afirme que um PDF foi criado sem evidência do Jira."
+    },
+    "comment": {
+      "id": "900002",
+      "body": "Confirmo os dados para a proposta: forecast 2026-11-30; probabilidade 70%; próximo follow-up em 2026-10-20; prioridade Alta; faturamento mensal; pagamento em 30 dias por transferência bancária; validade até 2026-11-30; incluir 3 licenças do software Solução QA Example para Empresa Exemplo QA.",
+      "author": {
+        "accountId": "qa-requester",
+        "displayName": "Solicitante QA"
+      },
+      "created": "2026-10-12T12:05:00.000+0000"
+    }
+  }
+}

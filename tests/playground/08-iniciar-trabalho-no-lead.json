@@ -1,0 +1,11 @@
+{
+  "webhookEvent": "jira:issue_updated",
+  "issue": {
+    "id": "651204",
+    "key": "OP-8402",
+    "fields": {
+      "summary": "Teste Playground: iniciar trabalho no lead",
+      "description": "No sandbox, inicie o trabalho neste lead usando a transição específica do fluxo e a classificação de licença somente se os dados obrigatórios estiverem confirmados e a transição estiver disponível. Consulte o estado atual antes da escrita. Se qualquer pré-condição falhar, não execute a transição e explique o que falta."
+    }
+  }
+}

@@ -9,12 +9,12 @@ from pydantic import ValidationError
 from src.agent.foundry_client import get_foundry_manager
 from src.agent.prompts import TRIAGE_SYSTEM_PROMPT, format_triage_user_prompt
 from src.config import get_settings
-from src.jira.connector import get_jira_connector
+from src.jira.connector import JiraConnector, get_jira_connector
 from src.models.agent_result import (
     AgentExecutionResult,
     TriageDecision,
 )
-from src.models.jira_webhook import JiraWebhookPayload
+from src.models.jira_webhook import JiraComment, JiraWebhookPayload
 from src.utils.logger import setup_logger
 
 logger = setup_logger("triage-agent")
@@ -55,6 +55,12 @@ class JiraTriageAgent:
             priority_name = issue.fields.priority.name if issue.fields.priority else None
             status_name = issue.fields.status.name if issue.fields.status else None
             issuetype_name = issue.fields.issuetype.name if issue.fields.issuetype else None
+            incoming_comment = (
+                webhook_payload.comment.get_body_text() if webhook_payload.comment else None
+            )
+            request_details = issue.fields.get_request_details_text(
+                self.settings.jira_request_details_field_id
+            )
 
             user_prompt = format_triage_user_prompt(
                 issue_key=issue_key,
@@ -64,12 +70,32 @@ class JiraTriageAgent:
                 current_priority=priority_name,
                 current_status=status_name,
                 issue_type=issuetype_name,
+                webhook_event=webhook_payload.webhook_event,
+                incoming_comment=incoming_comment,
+                request_details=request_details,
             )
 
-            openai_client = self.foundry_manager.get_openai_client()
+            if self._is_agent_comment(webhook_payload.comment):
+                return self._skipped_agent_comment(issue_key)
+
             jira_connector = get_jira_connector(self.settings)
             actions: list[str] = []
             with jira_connector if jira_connector is not None else nullcontext():
+                if (
+                    jira_connector is not None
+                    and issue_key.split("-", maxsplit=1)[0].upper()
+                    == self.settings.jira_lead_project_key.upper()
+                    and self._is_lead_issue(
+                        issuetype_name,
+                        issue.fields.issuetype.id if issue.fields.issuetype else None,
+                    )
+                ):
+                    latest_comment_result = jira_connector.get_latest_issue_comment(issue_key)
+                    latest_comment = latest_comment_result.get("latest_comment")
+                    if self._is_agent_comment(latest_comment, jira_connector):
+                        return self._skipped_agent_comment(issue_key)
+
+                openai_client = self.foundry_manager.get_openai_client()
                 if self.settings.model_provider in {"foundry-local", "ollama"}:
                     if jira_connector is None:
                         logger.info(
@@ -168,6 +194,49 @@ class JiraTriageAgent:
                 error_message=str(exc),
             )
 
+    def _is_agent_comment(
+        self,
+        comment: object,
+        jira_connector: JiraConnector | None = None,
+    ) -> bool:
+        if isinstance(comment, JiraComment):
+            author_id = comment.author.account_id if comment.author else None
+            body = comment.get_body_text()
+        elif isinstance(comment, dict):
+            author = comment.get("author")
+            author_id = (
+                author.get("accountId") or author.get("account_id")
+                if isinstance(author, dict)
+                else None
+            )
+            try:
+                body = JiraComment.model_validate(comment).get_body_text()
+            except ValidationError:
+                body = ""
+        else:
+            return False
+
+        if self.settings.jira_agent_account_id and author_id:
+            return author_id == self.settings.jira_agent_account_id
+        if body.startswith(JiraConnector.AGENT_COMMENT_PREFIX):
+            return True
+        if author_id and jira_connector is not None:
+            return jira_connector.is_authenticated_user_comment(comment)
+        return False
+
+    def _is_lead_issue(self, issue_type_name: str | None, issue_type_id: str | None) -> bool:
+        return issue_type_id == self.settings.jira_lead_issue_type_id or (
+            issue_type_name is not None and issue_type_name.casefold().startswith("lead")
+        )
+
+    @staticmethod
+    def _skipped_agent_comment(issue_key: str) -> AgentExecutionResult:
+        return AgentExecutionResult(
+            issue_key=issue_key,
+            success=True,
+            actions_taken=["Evento ignorado: o comentário mais recente foi publicado pelo agente."],
+        )
+
     def _run_jira_tool_calls(
         self,
         openai_client: object,
@@ -187,7 +256,9 @@ class JiraTriageAgent:
             if not calls:
                 return response, completed_tool_actions
             if calls_used + len(calls) > self.settings.azure_ai_max_tool_calls:
-                raise ValueError("O agente excedeu o limite configurado de chamadas de ferramentas.")
+                raise ValueError(
+                    "O agente excedeu o limite configurado de chamadas de ferramentas."
+                )
 
             tool_outputs = []
             for call in calls:
@@ -196,9 +267,13 @@ class JiraTriageAgent:
                 try:
                     arguments = json.loads(getattr(call, "arguments", ""))
                 except json.JSONDecodeError as exc:
-                    raise ValueError(f"O agente enviou JSON inválido para a ferramenta '{name}'.") from exc
+                    raise ValueError(
+                        f"O agente enviou JSON inválido para a ferramenta '{name}'."
+                    ) from exc
                 if not isinstance(arguments, dict):
-                    raise ValueError(f"Os argumentos da ferramenta '{name}' devem ser um objeto JSON.")
+                    raise ValueError(
+                        f"Os argumentos da ferramenta '{name}' devem ser um objeto JSON."
+                    )
 
                 result = jira_connector.execute_tool(name, arguments)
                 tool_outputs.append(
@@ -271,7 +346,9 @@ class JiraTriageAgent:
             if jira_connector is None:
                 raise ValueError("O modelo local solicitou ferramentas sem conector Jira.")
             if calls_used + len(calls) > self.settings.azure_ai_max_tool_calls:
-                raise ValueError("O agente excedeu o limite configurado de chamadas de ferramentas.")
+                raise ValueError(
+                    "O agente excedeu o limite configurado de chamadas de ferramentas."
+                )
 
             messages.append(message.model_dump(exclude_none=True))
             for call in calls:

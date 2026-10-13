@@ -131,9 +131,14 @@ class FoundryClientManager:
         host, _, _, project_name = (part.strip() for part in parts)
         if "://" in host:
             parsed_host = urlparse(host)
-            if parsed_host.scheme != "https" or not parsed_host.netloc or parsed_host.path not in (
-                "",
-                "/",
+            if (
+                parsed_host.scheme != "https"
+                or not parsed_host.netloc
+                or parsed_host.path
+                not in (
+                    "",
+                    "/",
+                )
             ):
                 raise ValueError("O host da string legada do projeto deve ser HTTPS.")
             host = parsed_host.netloc
