@@ -218,14 +218,15 @@ def test_connector_is_disabled_only_when_both_credentials_are_absent():
 
 
 def test_manifest_tool_registry_is_complete_and_write_tools_are_gated():
-    assert len(JIRA_TOOLS) == 24
-    assert len({tool.name for tool in JIRA_TOOLS}) == 24
+    assert len(JIRA_TOOLS) == 25
+    assert len({tool.name for tool in JIRA_TOOLS}) == 25
     with JiraConnector(
         jira_settings(JIRA_ENABLE_WRITE_OPERATIONS=False),
         transport=httpx.MockTransport(lambda request: httpx.Response(200, request=request)),
     ) as connector:
         available_names = {schema["name"] for schema in connector.available_tool_schemas()}
         assert "get_issue_fields" in available_names
+        assert "get_project_issue_type_metadata" in available_names
         assert "search_assets_products_by_manufacturer" in available_names
         assert "search_assets_products_by_software" in available_names
         assert "get_latest_issue_comment" in available_names
@@ -244,6 +245,56 @@ def test_create_lead_posts_only_supplied_fields():
 
     def handler(request: httpx.Request) -> httpx.Response:
         requests.append(request)
+        if request.method == "GET":
+            return httpx.Response(
+                200,
+                json={
+                    "fields": [
+                        {
+                            "fieldId": "customfield_10115",
+                            "name": "Empresa",
+                            "required": False,
+                            "schema": {"type": "string"},
+                            "operations": ["set"],
+                            "hasDefaultValue": False,
+                        },
+                        {
+                            "fieldId": "customfield_10118",
+                            "name": "Telefone",
+                            "required": False,
+                            "schema": {"type": "string"},
+                            "operations": ["set"],
+                            "hasDefaultValue": False,
+                        },
+                        {
+                            "fieldId": "customfield_10120",
+                            "name": "Detalhes da Solicitação",
+                            "required": False,
+                            "schema": {"type": "string"},
+                            "operations": ["set"],
+                            "hasDefaultValue": False,
+                        },
+                        {
+                            "fieldId": "customfield_10468",
+                            "name": "Quantidade de licenças",
+                            "required": False,
+                            "schema": {"type": "number"},
+                            "operations": ["set"],
+                            "hasDefaultValue": False,
+                        },
+                        {
+                            "fieldId": "customfield_10143",
+                            "name": "Origem do Lead",
+                            "required": False,
+                            "schema": {"type": "option"},
+                            "operations": ["set"],
+                            "hasDefaultValue": False,
+                            "allowedValues": [{"id": "3", "value": "Site"}],
+                        },
+                    ]
+                },
+                request=request,
+            )
         return httpx.Response(201, json={"key": "OP-9001"}, request=request)
 
     with JiraConnector(
@@ -255,24 +306,117 @@ def test_create_lead_posts_only_supplied_fields():
             {
                 "summary": "Novo lead",
                 "company": "Empresa exemplo",
+                "phone": "+55 11 5555-0100",
                 "license_count": 3,
+                "request_details": "Licenças para equipe comercial",
                 "lead_source": "Site",
             },
         )
 
     assert result == {"key": "OP-9001"}
-    assert requests[0].method == "POST"
-    assert requests[0].url.path == "/rest/api/3/issue"
-    assert json.loads(requests[0].content) == {
+    assert requests[0].method == "GET"
+    assert requests[0].url.path == "/rest/api/3/issue/createmeta/OP/issuetypes/12716"
+    assert requests[0].url.params["expand"] == "fields"
+    assert requests[1].method == "POST"
+    assert requests[1].url.path == "/rest/api/3/issue"
+    assert json.loads(requests[1].content) == {
         "fields": {
             "summary": "Novo lead",
             "issuetype": {"id": "12716"},
             "project": {"key": "OP"},
             "customfield_10115": "Empresa exemplo",
+            "customfield_10118": "+55 11 5555-0100",
+            "customfield_10120": "Licenças para equipe comercial",
             "customfield_10468": 3,
             "customfield_10143": {"value": "Site"},
         }
     }
+
+
+def test_project_issue_type_metadata_is_project_scoped_and_sanitized():
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(
+            200,
+            json={
+                "fields": [
+                    {
+                        "fieldId": "customfield_10120",
+                        "name": "Detalhes da Solicitação",
+                        "required": False,
+                        "schema": {"type": "string", "custom": "textarea"},
+                        "operations": ["set"],
+                        "hasDefaultValue": False,
+                        "allowedValues": [],
+                    },
+                    {
+                        "fieldId": "customfield_10143",
+                        "name": "Origem do Lead",
+                        "required": False,
+                        "schema": {"type": "option"},
+                        "operations": ["set"],
+                        "hasDefaultValue": False,
+                        "allowedValues": [
+                            {"id": "3", "value": "Site", "self": "https://example.invalid"},
+                        ],
+                    },
+                ]
+            },
+            request=request,
+        )
+
+    with JiraConnector(
+        jira_settings(),
+        transport=httpx.MockTransport(handler),
+    ) as connector:
+        result = connector.execute_tool(
+            "get_project_issue_type_metadata",
+            {"project_key": "op", "issue_type_id": "12716"},
+        )
+        with pytest.raises(JiraConnectorError, match="not included"):
+            connector.execute_tool(
+                "get_project_issue_type_metadata",
+                {"project_key": "OTHER", "issue_type_id": "12716"},
+            )
+
+    assert requests[0].url.path == "/rest/api/3/issue/createmeta/OP/issuetypes/12716"
+    assert result["fields"][1]["allowed_values"] == [{"id": "3", "value": "Site"}]
+    assert len(requests) == 1
+
+
+def test_create_lead_rejects_unavailable_option_from_metadata():
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(
+            200,
+            json={
+                "fields": [
+                    {
+                        "fieldId": "customfield_10143",
+                        "name": "Origem do Lead",
+                        "required": False,
+                        "schema": {"type": "option"},
+                        "operations": ["set"],
+                        "hasDefaultValue": False,
+                        "allowedValues": [{"value": "Site"}],
+                    }
+                ]
+            },
+            request=request,
+        )
+
+    with JiraConnector(
+        jira_settings(),
+        transport=httpx.MockTransport(handler),
+    ) as connector:
+        with pytest.raises(JiraConnectorError, match="not one of its allowed options"):
+            connector.create_lead("Novo lead", lead_source="Evento")
+
+    assert len(requests) == 1
 
 
 @pytest.mark.parametrize(
@@ -551,7 +695,7 @@ def test_public_comment_is_visible_to_requester_without_repeating_account_name()
 
     def handler(request: httpx.Request) -> httpx.Response:
         requests.append(request)
-        return httpx.Response(201, json={"id": "comment-public"}, request=request)
+        return httpx.Response(204, request=request)
 
     with JiraConnector(
         jira_settings(),
@@ -562,9 +706,18 @@ def test_public_comment_is_visible_to_requester_without_repeating_account_name()
             {"issue_key": "OP-1", "comment": "Informe a forma de pagamento."},
         )
 
-    assert result == {"id": "comment-public", "public": True}
-    assert requests[0].url.path == "/rest/api/2/issue/OP-1/comment"
-    assert json.loads(requests[0].content)["body"] == "Informe a forma de pagamento."
+    assert result == {
+        "issue_key": "OP-1",
+        "added": True,
+        "public": True,
+        "transition_id": "36",
+        "field_id": "customfield_15195",
+    }
+    assert requests[0].url.path == "/rest/api/2/issue/OP-1/transitions"
+    assert json.loads(requests[0].content) == {
+        "transition": {"id": "36"},
+        "fields": {"customfield_15195": "Informe a forma de pagamento."},
+    }
 
 
 def test_public_comment_removes_repeated_legacy_agent_headers():
@@ -572,6 +725,8 @@ def test_public_comment_removes_repeated_legacy_agent_headers():
 
     def handler(request: httpx.Request) -> httpx.Response:
         requests.append(request)
+        if request.url.path.endswith("/transitions"):
+            return httpx.Response(400, request=request)
         return httpx.Response(201, json={"id": "comment-public"}, request=request)
 
     with JiraConnector(
@@ -585,7 +740,8 @@ def test_public_comment_removes_repeated_legacy_agent_headers():
             "Olá, Maria! Poderia nos informar a data prevista?",
         )
 
-    assert json.loads(requests[0].content)["body"] == (
+    assert requests[-1].url.path == "/rest/api/2/issue/OP-1/comment"
+    assert json.loads(requests[-1].content)["body"] == (
         "Olá, Maria! Poderia nos informar a data prevista?"
     )
 
@@ -807,6 +963,83 @@ def test_update_lead_manufacturer_rejects_non_lead_issue_type():
                 {"issue_key": "OP-1", "manufacturer_name": "Acme Software"},
             )
 
+    assert [request.method for request in requests] == ["GET"]
+
+
+@pytest.mark.parametrize("manufacturer_field_id", ["", "customfield_10081"])
+def test_update_lead_manufacturer_reports_named_field_that_is_not_editable(
+    manufacturer_field_id: str,
+):
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(
+            200,
+            json={
+                "names": {"customfield_10081": "Fabricante"},
+                "editmeta": {"fields": {"issuetype": {"schema": {"type": "issuetype"}}}},
+                "fields": {"issuetype": {"id": "12716"}},
+            },
+            request=request,
+        )
+
+    with JiraConnector(
+        jira_settings(JIRA_MANUFACTURER_FIELD_ID=manufacturer_field_id),
+        transport=httpx.MockTransport(handler),
+    ) as connector:
+        with pytest.raises(
+            JiraConnectorError,
+            match=r"customfield_10081.*not editable.*edit screen",
+        ):
+            connector.execute_tool(
+                "update_lead_manufacturer",
+                {"issue_key": "OP-1", "manufacturer_name": "Acme Software"},
+            )
+
+    assert [request.method for request in requests] == ["GET"]
+
+
+def test_update_lead_manufacturer_can_be_skipped_as_pending_when_not_editable():
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(
+            200,
+            json={
+                "names": {"customfield_10081": "Fabricante"},
+                "editmeta": {"fields": {"issuetype": {"schema": {"type": "issuetype"}}}},
+                "fields": {"issuetype": {"id": "12716"}},
+            },
+            request=request,
+        )
+
+    with JiraConnector(
+        jira_settings(
+            JIRA_SKIP_MANUFACTURER_UPDATE_IF_NOT_EDITABLE=True,
+            JIRA_MANUFACTURER_FIELD_ID="customfield_10081",
+        ),
+        transport=httpx.MockTransport(handler),
+    ) as connector:
+        result = connector.execute_tool(
+            "update_lead_manufacturer",
+            {"issue_key": "OP-1", "manufacturer_name": "Acme Software"},
+        )
+        assert connector.manufacturer_update_pending is True
+
+    assert result == {
+        "issue_key": "OP-1",
+        "field_id": "customfield_10081",
+        "manufacturer": "Acme Software",
+        "updated": False,
+        "pending": True,
+        "reason": (
+            "Configured JIRA_MANUFACTURER_FIELD_ID 'customfield_10081' is not editable on "
+            "this issue. Add the field to the Jira lead edit screen and grant the integration "
+            "account permission to edit it."
+        ),
+    }
     assert [request.method for request in requests] == ["GET"]
 
 

@@ -1,0 +1,243 @@
+{
+  "reportId": "20261020T085841Z",
+  "generatedAt": "2026-10-20T08:58:41Z",
+  "target": {
+    "serviceName": "osb-jira-agent",
+    "agentRoot": "/home/sandro/_prj/devopsvanilla/loonar/loonar-morpheus-sysint/osb-jira-agent"
+  },
+  "results": [
+    {
+      "ruleId": "TOOL-001",
+      "title": "Configure and access MCP through Foundry Toolbox",
+      "level": "recommendation",
+      "rationale": "Foundry Toolbox centralizes MCP configuration, authentication, credential handling, and policy enforcement while allowing tools to be updated without changing hosted-agent code.",
+      "status": "skipped",
+      "details": "The selected hosted-agent entry point and its associated configuration use Jira and Confluence APIs directly; no MCP server connection is established in the inspected service.",
+      "guidance": [
+        {
+          "title": "Agent Framework Foundry Toolbox sample",
+          "link": "https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/agent-framework/responses/04-foundry-toolbox"
+        },
+        {
+          "title": "LangGraph Foundry Toolbox sample",
+          "link": "https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/langgraph/responses/02-langgraph-toolbox"
+        }
+      ]
+    },
+    {
+      "ruleId": "AIGW-001",
+      "title": "Use AI Gateway for required rate limits",
+      "level": "recommendation",
+      "rationale": "Azure API Management AI Gateway can enforce model token or request limits and tool-call limits before traffic reaches backends.",
+      "status": "skipped",
+      "details": "No model token/request rate limit or tool-call rate-limit requirement is established in the selected service configuration. The per-response max_output_tokens and per-execution max_tool_calls caps are not evidence of a rate-limit requirement.",
+      "sourceCode": [
+        "src/agent/triage_agent.py:147-153",
+        "src/config.py:69"
+      ],
+      "guidance": [
+        {
+          "title": "APIM hosted-agent solution template",
+          "link": "https://github.com/microsoft/Foundry-Agent-Solution-Templates/tree/main/apim-hosted-agent"
+        }
+      ]
+    },
+    {
+      "ruleId": "OBS-001",
+      "title": "Enable supported tracing for hosted agents",
+      "level": "recommendation",
+      "rationale": "Tracing connects agent, model and tool operations to an inspectable telemetry destination.",
+      "status": "inconclusive",
+      "details": "The selected azure.yaml service does not declare APPLICATIONINSIGHTS_CONNECTION_STRING, OTEL_EXPORTER_OTLP_ENDPOINT, or a signal-specific OTLP endpoint. Local code obtains an OpenTelemetry tracer, but the inspected repository configuration does not establish a supported exporter and destination. Automatic hosting or project-level tracing may be configured externally and cannot be confirmed from these files.",
+      "sourceCode": [
+        "azure.yaml:25-68",
+        "src/agent/triage_agent.py:7-23"
+      ],
+      "guidance": [
+        {
+          "title": "Configure hosted-agent telemetry",
+          "link": "https://learn.microsoft.com/azure/foundry/agents/how-to/configure-hosted-agent-telemetry"
+        },
+        {
+          "title": "Set up tracing for agents",
+          "link": "https://learn.microsoft.com/azure/foundry/observability/how-to/trace-agent-setup"
+        }
+      ]
+    },
+    {
+      "ruleId": "SDK-001",
+      "title": "Use consistent Microsoft Agent Framework dependencies",
+      "level": "recommendation",
+      "rationale": "Consistent Agent Framework declarations and imports prevent avoidable dependency mismatches; other supported frameworks remain valid.",
+      "status": "skipped",
+      "details": "The selected service declares the Invocations hosting package and uses Azure AI Projects/OpenAI clients; it does not declare or import Microsoft Agent Framework.",
+      "sourceCode": [
+        "pyproject.toml:8-19",
+        "src/hosted_agent/main.py:6"
+      ],
+      "guidance": [
+        {
+          "title": "Microsoft Agent Framework SDK overview",
+          "link": "https://learn.microsoft.com/azure/foundry/how-to/develop/sdk-overview#agent-framework"
+        },
+        {
+          "title": "Choose a hosted-agent framework",
+          "link": "https://learn.microsoft.com/azure/foundry/agents/quickstarts/quickstart-deploy-own-code#choose-your-framework"
+        }
+      ]
+    },
+    {
+      "ruleId": "SDK-002",
+      "title": "Use recommended Foundry hosted-agent SDKs",
+      "level": "recommendation",
+      "rationale": "Approved Foundry hosting packages reduce custom protocol code.",
+      "status": "pass",
+      "details": "The selected service resolves to the approved Python hosting dependency azure-ai-agentserver-invocations, declared in pyproject.toml and pinned in requirements.txt. No unapproved agent or hosting SDK was found in the selected dependency manifests.",
+      "sourceCode": [
+        "pyproject.toml:8",
+        "requirements.txt:26"
+      ],
+      "guidance": [
+        {
+          "title": "Python hosted-agent framework samples",
+          "link": "https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents"
+        },
+        {
+          "title": ".NET hosted-agent framework samples",
+          "link": "https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/csharp/hosted-agents"
+        },
+        {
+          "title": "Python LangGraph hosting samples",
+          "link": "https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/langgraph"
+        }
+      ]
+    },
+    {
+      "ruleId": "AGT-001",
+      "title": "Do not instruct agents to bypass controls or fabricate success",
+      "level": "warning",
+      "rationale": "Operative agent instructions must not authorize fabricated outcomes, unrestricted consequential actions, or bypasses of runtime controls and required approvals.",
+      "status": "pass",
+      "details": "The entry point passes TRIAGE_SYSTEM_PROMPT to the model. The operative prompt requires verified tool results, prohibits inventing data, bounds authorized commercial actions, says not to bypass disabled writes, and requires reporting failures rather than claiming success. No instruction to bypass controls or fabricate outcomes was found.",
+      "sourceCode": [
+        "src/agent/triage_agent.py:138-147",
+        "src/agent/prompts.py:7-33"
+      ],
+      "guidance": [
+        {
+          "title": "Tool best practices for agents",
+          "link": "https://learn.microsoft.com/azure/foundry/agents/concepts/tool-best-practice"
+        },
+        {
+          "title": "Responsible AI transparency note for agents",
+          "link": "https://learn.microsoft.com/azure/foundry/responsible-ai/agents/transparency-note"
+        }
+      ]
+    },
+    {
+      "ruleId": "AUTH-001",
+      "title": "Use Microsoft Entra authentication for Azure AI Search",
+      "level": "recommendation",
+      "rationale": "Microsoft Entra authentication avoids distributing Search API keys and supports identity-based access control for hosted-agent retrieval.",
+      "status": "skipped",
+      "details": "The selected service's knowledge retrieval path uses Confluence and local RAG code; no runtime Azure AI Search client or linked Search tool/connection is established.",
+      "sourceCode": [
+        "src/agent/prompts.py:16",
+        "src/kb/confluence_client.py:1"
+      ],
+      "guidance": [
+        {
+          "title": "Azure AI Search role-based access control",
+          "link": "https://learn.microsoft.com/azure/search/search-security-rbac"
+        },
+        {
+          "title": "Enterprise knowledge-agent connection configuration",
+          "link": "https://github.com/microsoft/Foundry-Agent-Solution-Templates/blob/main/enterprise-knowledge-agent/scripts/provision.py"
+        }
+      ]
+    },
+    {
+      "ruleId": "IMG-001",
+      "title": "Pin prebuilt hosted-agent images by digest",
+      "level": "recommendation",
+      "rationale": "An immutable image digest makes hosted-agent deployments reproducible and prevents a mutable tag from silently selecting different image contents.",
+      "status": "skipped",
+      "details": "The selected service uses codeConfiguration with remote_build dependency resolution and does not consume a prebuilt image.",
+      "sourceCode": [
+        "azure.yaml:18-21"
+      ],
+      "guidance": [
+        {
+          "title": "Azure Container Registry image tagging and versioning",
+          "link": "https://learn.microsoft.com/azure/container-registry/container-registry-image-tag-version"
+        },
+        {
+          "title": "Private-network hosted-agent existing ACR scenario",
+          "link": "https://github.com/microsoft/Foundry-Agent-Solution-Templates/tree/main/private-network-hosted-agent/scenarios/existing-private-acr"
+        }
+      ]
+    },
+    {
+      "ruleId": "NET-001",
+      "title": "Preserve private-only access in repository-managed recovery",
+      "level": "warning",
+      "rationale": "Automatically opening public access or sending private workload data to a public fallback during recovery defeats an explicitly configured private-only access boundary.",
+      "status": "skipped",
+      "details": "No private-only access boundary is established for the selected hosted-agent service. The repository's linked Foundry resource configuration explicitly enables public network access; no private-only contract for this hosted service was found.",
+      "sourceCode": [
+        "terraform/modules/ai_foundry/main.tf:23"
+      ],
+      "guidance": [
+        {
+          "title": "Foundry hosted-agent virtual networks",
+          "link": "https://learn.microsoft.com/azure/foundry/agents/how-to/virtual-networks"
+        },
+        {
+          "title": "Private-network hosted-agent security boundaries",
+          "link": "https://github.com/microsoft/Foundry-Agent-Solution-Templates/blob/main/private-network-hosted-agent/docs/security.md"
+        }
+      ]
+    },
+    {
+      "ruleId": "CFG-001",
+      "title": "Do not override platform-managed runtime configuration",
+      "level": "warning",
+      "rationale": "Overriding platform-injected FOUNDRY_* or AGENT_* runtime variables can break hosted-agent behavior.",
+      "status": "pass",
+      "details": "The selected service's deployed environmentVariables and entry point do not assign reserved FOUNDRY_* or AGENT_* names. JIRA_AGENT_ACCOUNT_ID is a JIRA_AGENT_* application variable, not an AGENT_* runtime variable.",
+      "sourceCode": [
+        "azure.yaml:25-68",
+        "src/hosted_agent/main.py:1-40"
+      ],
+      "guidance": [
+        {
+          "title": "Review platform environment variables",
+          "link": "https://learn.microsoft.com/azure/foundry/agents/how-to/configure-hosted-agent-env-variables#review-platform-environment-variables"
+        }
+      ]
+    },
+    {
+      "ruleId": "PROTO-001",
+      "title": "Keep declared protocols consistent with runtime handlers",
+      "level": "warning",
+      "rationale": "Declared hosted-agent protocols must match the deployed handlers.",
+      "status": "pass",
+      "details": "azure.yaml declares the Invocations protocol and selects src/hosted_agent/main.py as the entry point. The entry point constructs InvocationAgentServerHost and registers handle_invocation with @app.invoke_handler, matching the declared protocol.",
+      "sourceCode": [
+        "azure.yaml:18-24",
+        "src/hosted_agent/main.py:6-20"
+      ],
+      "guidance": [
+        {
+          "title": "Hosted-agent protocol endpoints",
+          "link": "https://learn.microsoft.com/azure/foundry/agents/concepts/hosted-agent-contract#protocol-endpoints"
+        },
+        {
+          "title": "Add a protocol adapter",
+          "link": "https://learn.microsoft.com/azure/foundry/agents/how-to/add-protocol-adapter"
+        }
+      ]
+    }
+  ],
+  "markdownPath": "/home/sandro/_prj/devopsvanilla/loonar/loonar-morpheus-sysint/osb-jira-agent/.foundry/validation/validation-20261020T085841Z-osb-jira-agent.md"
+}

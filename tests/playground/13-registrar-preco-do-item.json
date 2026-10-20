@@ -1,11 +1,11 @@
 {
   "webhookEvent": "jira:issue_updated",
   "issue": {
-    "id": "651204",
-    "key": "OP-8402",
+    "id": "651497",
+    "key": "OP-8885",
     "fields": {
-      "summary": "Teste Playground: registrar preço do item",
-      "description": "No sandbox, registre no item de proposta associado a OP-8402 o preço unitário de 125.50 e marque o cenário como provável somente se a solicitação e o item corresponderem e o Jira confirmar a atualização. Consulte os valores atuais antes de escrever. Não altere outro item nem invente preço."
+      "summary": "[TESTE Agente IA] Novo Lead do Site - Anydesk",
+      "description": "No sandbox, localize um item de proposta existente vinculado a OP-8885 e consulte os valores atuais. A consulta de referência não encontrou itens; se continuar sem item, não registre preço nem cenário provável. Não invente um preço ou altere outra issue."
     }
   }
 }

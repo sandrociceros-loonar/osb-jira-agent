@@ -1,10 +1,10 @@
 {
   "webhookEvent": "jira:issue_updated",
   "issue": {
-    "id": "651204",
-    "key": "OP-8402",
+    "id": "651497",
+    "key": "OP-8885",
     "fields": {
-      "summary": "Teste Playground: listar oportunidades pendentes",
+      "summary": "[TESTE Agente IA] Novo Lead do Site - Anydesk",
       "description": "Liste todas as oportunidades pendentes do projeto OP, incluindo chave, empresa, etapa e responsável. Não altere issues."
     }
   }

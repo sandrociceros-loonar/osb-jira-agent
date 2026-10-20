@@ -76,18 +76,19 @@ class KBCacheManager:
             self._cached_chunks = list(chunks)
             self._last_loaded_at = now
 
+        payload = {
+            "space_key": self.space_key,
+            "saved_at": now.isoformat(),
+            "pages_count": len(pages),
+            "chunks_count": len(chunks),
+            "pages": [p.model_dump(mode="json") for p in pages],
+            "chunks": [c.model_dump(mode="json") for c in chunks],
+        }
+        serialized = json.dumps(payload, ensure_ascii=False, indent=2)
         try:
             self.cache_dir.mkdir(parents=True, exist_ok=True)
-            payload = {
-                "space_key": self.space_key,
-                "saved_at": now.isoformat(),
-                "pages_count": len(pages),
-                "chunks_count": len(chunks),
-                "pages": [p.model_dump(mode="json") for p in pages],
-                "chunks": [c.model_dump(mode="json") for c in chunks],
-            }
             temp_file = self.cache_file.with_suffix(".tmp")
-            temp_file.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+            temp_file.write_text(serialized, encoding="utf-8")
             temp_file.replace(self.cache_file)
             logger.info(
                 "KB Cache salvo com sucesso: %d páginas, %d chunks em %s",
@@ -95,6 +96,27 @@ class KBCacheManager:
                 len(chunks),
                 self.cache_file,
             )
+        except OSError as exc:
+            fallback_dir = Path("/tmp/kb_cache")
+            if self.cache_dir != fallback_dir:
+                try:
+                    self.cache_dir = fallback_dir
+                    self.cache_file = self.cache_dir / f"confluence_{self.space_key}_cache.json"
+                    self.cache_dir.mkdir(parents=True, exist_ok=True)
+                    temp_file = self.cache_file.with_suffix(".tmp")
+                    temp_file.write_text(serialized, encoding="utf-8")
+                    temp_file.replace(self.cache_file)
+                    logger.info(
+                        "KB Cache salvo em fallback %s: %d páginas, %d chunks",
+                        self.cache_file,
+                        len(pages),
+                        len(chunks),
+                    )
+                    return
+                except Exception as fallback_exc:
+                    logger.error("Falha ao salvar KB Cache no fallback /tmp: %s", fallback_exc)
+                    return
+            logger.error("Falha ao salvar KB Cache no disco: %s", exc)
         except Exception as exc:
             logger.error("Falha ao salvar KB Cache no disco: %s", exc)
 
@@ -112,7 +134,9 @@ class KBCacheManager:
                 saved_at = datetime.fromisoformat(saved_at_raw)
                 age = (datetime.now(UTC) - saved_at).total_seconds()
                 if age > self.ttl_seconds:
-                    logger.info("KB Cache em disco expirou (idade: %.0fs, ttl: %ds).", age, self.ttl_seconds)
+                    logger.info(
+                        "KB Cache em disco expirou (idade: %.0fs, ttl: %ds).", age, self.ttl_seconds
+                    )
                     return None
 
             pages_raw = data.get("pages", [])

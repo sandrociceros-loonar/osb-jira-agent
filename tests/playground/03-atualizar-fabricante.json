@@ -1,11 +1,11 @@
 {
   "webhookEvent": "jira:issue_updated",
   "issue": {
-    "id": "651204",
-    "key": "OP-8402",
+    "id": "651497",
+    "key": "OP-8885",
     "fields": {
-      "summary": "Teste Playground: enriquecer lead com fabricante",
-      "description": "No sandbox, consulte o lead e localize o software informado usando Jira Assets. Se e somente se encontrar correspondência inequívoca, atualize o campo Fabricante do lead com o fabricante confirmado e o ID do objeto retornado pelo Assets quando o campo exigir um objeto. Confirme o resultado da atualização. Se o software faltar, não houver correspondência ou houver ambiguidade, não escreva e informe o bloqueio."
+      "summary": "[TESTE Agente IA] Novo Lead do Site - Anydesk",
+      "description": "Consulte OP-8885 e o Jira Assets. O lead informa apenas 'Anydesk'; a busca por esse nome tem múltiplos produtos e mais resultados do que a página retornada, portanto não atualize o fabricante nem escolha um produto. Peça ao contato a edição exata do Anydesk. Só atualize o fabricante depois de uma confirmação inequívoca e de verificar a ferramenta de escrita disponível."
     }
   }
 }

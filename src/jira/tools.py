@@ -22,9 +22,18 @@ class CreateLeadArguments(ToolArguments):
     company: str | None = Field(default=None, max_length=255)
     contact_name: str | None = Field(default=None, max_length=255)
     email: str | None = Field(default=None, max_length=320)
+    phone: str | None = Field(default=None, max_length=100)
     license_count: int | None = Field(default=None, ge=1, le=100000)
     product_root: str | None = Field(default=None, max_length=255)
+    request_details: str | None = Field(default=None, max_length=4000)
+    domain: str | None = Field(default=None, max_length=255)
+    job_title: str | None = Field(default=None, max_length=255)
     lead_source: str | None = Field(default=None, max_length=100)
+
+
+class ProjectIssueTypeMetadataArguments(ToolArguments):
+    project_key: str = Field(min_length=1, max_length=10, pattern=r"^[A-Za-z][A-Za-z0-9_]*$")
+    issue_type_id: str = Field(pattern=r"^\d+$")
 
 
 class AttachmentArguments(IssueKeyArguments):
@@ -93,8 +102,8 @@ class AddCommentArguments(IssueKeyArguments):
 class KBQueryArguments(ToolArguments):
     query: str = Field(
         min_length=2,
-        max_length=500,
-        description="Dúvida apresentada pelo lead a pesquisar na base de conhecimento",
+        max_length=1000,
+        description="Dúvida apresentada pelo lead ou URL de link da base de conhecimento (mesmo domínio) a consultar",
     )
 
 
@@ -136,7 +145,7 @@ class JiraTool:
 JIRA_TOOLS: tuple[JiraTool, ...] = (
     JiraTool(
         "create_lead",
-        "Cria um lead no projeto configurado com os campos fornecidos. Requer escrita habilitada.",
+        "Cria um lead no projeto configurado usando os metadados Jira e os campos comerciais fornecidos, incluindo contato, telefone, detalhes da solicitação e origem. Requer escrita habilitada.",
         CreateLeadArguments,
         "create_lead",
         True,
@@ -146,6 +155,12 @@ JIRA_TOOLS: tuple[JiraTool, ...] = (
         "Obtém todos os campos, nomes, metadados de edição e transições disponíveis de uma issue.",
         IssueKeyArguments,
         "get_issue_fields",
+    ),
+    JiraTool(
+        "get_project_issue_type_metadata",
+        "Consulta metadados de criação do Jira para um projeto e tipo de issue permitidos, incluindo nomes, IDs, tipos, campos obrigatórios e opções disponíveis. Somente leitura.",
+        ProjectIssueTypeMetadataArguments,
+        "get_project_issue_type_metadata",
     ),
     JiraTool(
         "get_lead_details",
@@ -250,7 +265,7 @@ JIRA_TOOLS: tuple[JiraTool, ...] = (
     ),
     JiraTool(
         "update_lead_manufacturer",
-        "Atualiza no lead o campo Fabricante/Manufacturer com dados confirmados pelo Jira Assets. Requer escrita habilitada.",
+        "Atualiza no lead o campo Fabricante/Manufacturer com dados confirmados pelo Jira Assets. Se a configuração de bypass estiver habilitada e o campo estiver indisponível para edição, retorna uma pendência; não considere o fabricante atualizado. Requer escrita habilitada.",
         UpdateManufacturerArguments,
         "update_lead_manufacturer",
         True,
@@ -277,7 +292,7 @@ JIRA_TOOLS: tuple[JiraTool, ...] = (
     ),
     JiraTool(
         "query_knowledge_base",
-        "Pesquisa dúvidas do lead na base de conhecimento do Confluence (com cache RAG e fallback direto em atualização).",
+        "Pesquisa dúvidas do lead na base de conhecimento do Confluence (com cache RAG e fallback direto em atualização), lendo textos e links do mesmo domínio.",
         KBQueryArguments,
         "query_knowledge_base",
         False,

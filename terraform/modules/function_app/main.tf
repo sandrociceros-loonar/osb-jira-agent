@@ -130,9 +130,17 @@ resource "azurerm_role_assignment" "ai_services_role" {
   principal_id         = azapi_resource.function.identity[0].principal_id
 }
 
+# Atribuição de permissão RBAC: Foundry User (necessário para AIProjectClient / Responses API no projeto Foundry)
+resource "azurerm_role_assignment" "foundry_user_role" {
+  scope              = var.ai_services_id
+  role_definition_id = "/subscriptions/${data.azurerm_client_config.current.subscription_id}/providers/Microsoft.Authorization/roleDefinitions/53ca6127-db72-4b80-b1b0-d745d6d5456d"
+  principal_id       = azapi_resource.function.identity[0].principal_id
+}
+
 # Atribuição de permissão RBAC: Key Vault Secrets User para ler segredos
 resource "azurerm_role_assignment" "key_vault_role" {
   scope                = var.key_vault_id
   role_definition_name = "Key Vault Secrets User"
   principal_id         = azapi_resource.function.identity[0].principal_id
 }
+

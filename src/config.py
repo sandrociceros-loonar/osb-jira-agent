@@ -3,12 +3,19 @@
 from typing import Literal
 from urllib.parse import urlparse
 
-from pydantic import AliasChoices, Field
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     """Configurações globais da aplicação carregadas do ambiente."""
+
+    @field_validator("jira_request_details_field_id", mode="before")
+    @classmethod
+    def default_request_details_field_id(cls, value: object) -> str:
+        if value is None or not str(value).strip():
+            return "customfield_10120"
+        return str(value).strip()
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -84,6 +91,16 @@ class Settings(BaseSettings):
         alias="JIRA_WEBHOOK_SECRET_HEADER",
         description="Nome do cabeçalho HTTP contendo o segredo do webhook",
     )
+    jira_webhook_response_timeout_seconds: float = Field(
+        default=2.0,
+        alias="JIRA_WEBHOOK_RESPONSE_TIMEOUT_SECONDS",
+        ge=0.0,
+        le=120.0,
+        description=(
+            "Tempo máximo em segundos que o endpoint de webhook aguarda pelo agente "
+            "antes de responder 200 OK (retorno rápido) e concluir em background"
+        ),
+    )
 
     # Jira Context
     jira_instance_url: str = Field(
@@ -138,6 +155,16 @@ class Settings(BaseSettings):
         alias="JIRA_TRANSITION_IDS",
         description="IDs das transições definidas nos manifestos; variam por workflow Jira",
     )
+    jira_customer_message_transition_id: str = Field(
+        default="36",
+        alias="JIRA_CUSTOMER_MESSAGE_TRANSITION_ID",
+        description="ID da transição Jira 'Mensagem para o Cliente' que dispara o envio ao cliente",
+    )
+    jira_customer_message_field_id: str = Field(
+        default="customfield_15195",
+        alias="JIRA_CUSTOMER_MESSAGE_FIELD_ID",
+        description="ID do campo Jira 'Mensagem Para Cliente' preenchido na transição de envio ao cliente",
+    )
     jira_allow_write_operations: bool = Field(
         default=False,
         alias="JIRA_ENABLE_WRITE_OPERATIONS",
@@ -169,7 +196,15 @@ class Settings(BaseSettings):
         alias="JIRA_MANUFACTURER_FIELD_ID",
         description=(
             "ID opcional do campo Jira para gravar o fabricante; "
-            "se vazio, o conector localiza um campo editável chamado Fabricante/Manufacturer"
+            "se vazio, o conector localiza um campo chamado Fabricante/Manufacturer"
+        ),
+    )
+    jira_skip_manufacturer_update_if_not_editable: bool = Field(
+        default=False,
+        alias="JIRA_SKIP_MANUFACTURER_UPDATE_IF_NOT_EDITABLE",
+        description=(
+            "Permite continuar o webhook com atualização de fabricante pendente quando "
+            "o campo existe, mas não está editável; a geração de proposta continua bloqueada"
         ),
     )
     jira_agent_account_id: str = Field(
@@ -187,17 +222,17 @@ class Settings(BaseSettings):
 
     # Confluence Knowledge Base & RAG
     confluence_space_url: str = Field(
-        default="",
+        default="https://loonar-osb.atlassian.net/wiki/spaces/osbjiraage",
         alias="CONFLUENCE_SPACE_URL",
         description="URL completa do espaço Confluence da base de conhecimento",
     )
     confluence_base_url: str = Field(
-        default="",
+        default="https://loonar-osb.atlassian.net/wiki",
         alias="CONFLUENCE_BASE_URL",
         description="URL base da API do Confluence Cloud",
     )
     confluence_space_key: str = Field(
-        default="",
+        default="osbjiraage",
         alias="CONFLUENCE_SPACE_KEY",
         description="Chave do espaço Confluence da base de conhecimento",
     )
@@ -224,9 +259,9 @@ class Settings(BaseSettings):
         description="Nome do cabeçalho contendo o segredo do webhook Confluence",
     )
     jira_request_details_field_id: str = Field(
-        default="",
+        default="customfield_10120",
         alias="JIRA_REQUEST_DETAILS_FIELD_ID",
-        description="ID do campo Jira correspondente a Detalhes da Solicitação",
+        description="ID do campo Jira Detalhes da Solicitação (conforme metadados do projeto OP)",
     )
     kb_cache_dir: str = Field(
         default=".cache/kb",
@@ -240,7 +275,7 @@ class Settings(BaseSettings):
         description="TTL do cache da base de conhecimento em segundos",
     )
     kb_min_confidence_score: float = Field(
-        default=0.35,
+        default=0.15,
         alias="KB_MIN_CONFIDENCE_SCORE",
         ge=0.0,
         le=1.0,

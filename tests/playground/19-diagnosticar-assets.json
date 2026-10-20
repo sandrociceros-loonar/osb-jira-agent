@@ -1,10 +1,10 @@
 {
   "webhookEvent": "jira:issue_updated",
   "issue": {
-    "id": "651204",
-    "key": "OP-8402",
+    "id": "651497",
+    "key": "OP-8885",
     "fields": {
-      "summary": "Teste Playground: diagnosticar schemas do Jira Assets",
+      "summary": "[TESTE Agente IA] Novo Lead do Site - Anydesk",
       "description": "Para diagnóstico somente leitura, consulte os workspaces e schemas do Jira Assets disponíveis e os tipos de objeto do schema relacionado a produtos. Informe IDs apenas se retornados pelas ferramentas. Não atualize issues nem objetos Assets."
     }
   }

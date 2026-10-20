@@ -119,3 +119,35 @@ def test_jira_webhook_successful_triage(sample_outage_webhook_payload):
     assert data["issue_key"] == "ITSM-101"
     assert data["decision"]["category"] == "Infrastructure & Cloud"
     assert data["decision"]["priority"] == "Highest"
+
+
+def test_jira_webhook_fast_return_when_async_param_requested(sample_outage_webhook_payload):
+    """Testa retorno imediato 200 (status=processing) quando ?async=true é informado."""
+    import threading
+    import time
+
+    req = func.HttpRequest(
+        method="POST",
+        body=json.dumps(sample_outage_webhook_payload).encode("utf-8"),
+        url="/api/jira-webhook",
+        params={"async": "true"},
+        headers={"X-Atlassian-Webhook-Secret": "test-secret-12345"},
+    )
+
+    finished = threading.Event()
+
+    def _delayed_process(_self, _payload):
+        time.sleep(0.05)
+        finished.set()
+        return AgentExecutionResult(issue_key="ITSM-101", success=True)
+
+    with patch("src.webhook_handler.verify_jira_webhook", return_value=True):
+        with patch.object(JiraTriageAgent, "process_ticket", new=_delayed_process):
+            resp = jira_webhook_trigger(req)
+            assert finished.wait(timeout=2.0)
+
+    assert resp.status_code == 200
+    data = json.loads(resp.get_body())
+    assert data["status"] == "processing"
+    assert data["success"] is True
+    assert data["issue_key"] == "ITSM-101"

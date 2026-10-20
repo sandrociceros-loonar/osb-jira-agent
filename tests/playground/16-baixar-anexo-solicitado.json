@@ -1,11 +1,11 @@
 {
   "webhookEvent": "jira:issue_updated",
   "issue": {
-    "id": "651204",
-    "key": "OP-8402",
+    "id": "651497",
+    "key": "OP-8885",
     "fields": {
-      "summary": "Teste Playground: baixar anexo solicitado",
-      "description": "Identifique nos metadados de OP-8402 o anexo cujo nome corresponda exatamente a 'documento de proposta solicitado.pdf'. Baixe somente esse anexo se existir e estiver abaixo do limite configurado. Não baixe outros anexos nem reproduza conteúdo sensível; se não houver correspondência, informe isso."
+      "summary": "[TESTE Agente IA] Novo Lead do Site - Anydesk",
+      "description": "Verifique os anexos de OP-8885 antes de qualquer download. O snapshot de referência não tinha anexos; se a lista atual continuar vazia, informe que não há anexo para baixar. Não procure nem baixe outro arquivo."
     }
   }
 }

@@ -4,12 +4,82 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+from opentelemetry.trace import StatusCode
 
 from src.agent.prompts import TRIAGE_SYSTEM_PROMPT, format_triage_user_prompt
 from src.agent.triage_agent import JiraTriageAgent
 from src.jira.tools import JIRA_TOOLS
 from src.models.agent_result import TriageCategory, TriagePriority
 from src.models.jira_webhook import JiraWebhookPayload
+
+
+def test_jira_tool_execution_emits_trace_without_recording_payload():
+    exporter = InMemorySpanExporter()
+    provider = TracerProvider()
+    provider.add_span_processor(SimpleSpanProcessor(exporter))
+    connector = MagicMock()
+    connector.execute_tool.return_value = {"key": "OP-101", "summary": "Private lead"}
+
+    with patch("src.agent.triage_agent.tracer", provider.get_tracer("test")):
+        result = JiraTriageAgent._execute_jira_tool(
+            connector,
+            "get_issue_fields",
+            {"issue_key": "OP-101"},
+        )
+
+    span = exporter.get_finished_spans()[0]
+    provider.shutdown()
+
+    assert result == {"key": "OP-101", "summary": "Private lead"}
+    assert span.name == "jira.execute_tool"
+    assert span.attributes == {
+        "gen_ai.operation.name": "execute_tool",
+        "gen_ai.tool.name": "get_issue_fields",
+    }
+
+
+def test_generate_proposal_is_blocked_when_manufacturer_update_is_pending():
+    connector = MagicMock()
+    connector.manufacturer_update_pending = True
+
+    result = JiraTriageAgent._execute_jira_tool(
+        connector,
+        "generate_new_proposal",
+        {"issue_key": "OP-101"},
+    )
+
+    assert result == {
+        "error": (
+            "A proposta não pode ser gerada: a atualização do fabricante está pendente. "
+            "Informe a pendência e solicite a liberação do campo no Jira."
+        ),
+        "success": False,
+        "proposal_blocked": True,
+    }
+    connector.execute_tool.assert_not_called()
+
+
+def test_failed_jira_tool_execution_marks_trace_without_recording_exception():
+    exporter = InMemorySpanExporter()
+    provider = TracerProvider()
+    provider.add_span_processor(SimpleSpanProcessor(exporter))
+    connector = MagicMock()
+    connector.execute_tool.side_effect = ValueError("sensitive Jira response")
+
+    with (
+        patch("src.agent.triage_agent.tracer", provider.get_tracer("test")),
+        pytest.raises(ValueError, match="sensitive Jira response"),
+    ):
+        JiraTriageAgent._execute_jira_tool(connector, "get_issue_fields", {})
+
+    span = exporter.get_finished_spans()[0]
+    provider.shutdown()
+
+    assert span.status.status_code == StatusCode.ERROR
+    assert span.events == ()
 
 
 def test_webhook_comment_adf_is_extracted_as_readable_text():
@@ -64,6 +134,22 @@ def test_commercial_prompt_uses_crm_purpose_and_safe_defaults():
     assert "Proposta de renovação" in user_prompt
 
 
+def test_commercial_prompt_includes_custom_fields_from_webhook():
+    user_prompt = format_triage_user_prompt(
+        issue_key="OP-8885",
+        summary="Novo Lead do Site - Anydesk",
+        description="Cenário somente leitura.",
+        custom_fields={
+            "customfield_10119": "Anydesk",
+            "customfield_10143": {"id": "11102", "value": "Site"},
+        },
+    )
+
+    assert "snapshot do evento" in user_prompt
+    assert '"customfield_10119": "Anydesk"' in user_prompt
+    assert '"customfield_10143": {"id": "11102", "value": "Site"}' in user_prompt
+
+
 def test_public_lead_comment_is_not_addressed_to_the_jira_operator():
     user_prompt = format_triage_user_prompt(
         issue_key="OP-101",
@@ -76,11 +162,14 @@ def test_public_lead_comment_is_not_addressed_to_the_jira_operator():
     assert "dirigida ao lead/contato comercial" in TRIAGE_SYSTEM_PROMPT
     assert "nunca escreva ao operador/usuário Jira" in TRIAGE_SYSTEM_PROMPT
     assert "nunca o trate como destinatário" in TRIAGE_SYSTEM_PROMPT
-    assert "Use saudação com nome somente se o nome do lead/contato estiver claramente identificado" in (
-        TRIAGE_SYSTEM_PROMPT
+    assert (
+        "Use saudação com nome somente se o nome do lead/contato estiver claramente identificado"
+        in (TRIAGE_SYSTEM_PROMPT)
     )
     assert "Operador do Jira" in user_prompt
     assert "contexto operacional, não destinatário do comentário" in user_prompt
+    assert "get_issue_fields" in TRIAGE_SYSTEM_PROMPT
+    assert "não execute ferramentas de escrita nem transições" in TRIAGE_SYSTEM_PROMPT
 
 
 def test_all_public_lead_comments_use_customer_facing_commercial_tone():
@@ -120,7 +209,11 @@ def test_lead_doubt_human_escalation_rules_in_prompt():
     assert "como uma pessoa da equipe comercial humana" in TRIAGE_SYSTEM_PROMPT
     assert "nunca cite ou dê a entender que é um agente de IA" in TRIAGE_SYSTEM_PROMPT
     assert "logo mais entrará em contato" in TRIAGE_SYSTEM_PROMPT
-    assert "questionando se deve prosseguir" in TRIAGE_SYSTEM_PROMPT or "questione o cliente cordialmente na mensagem se deve prosseguir com o envio/geração da proposta" in TRIAGE_SYSTEM_PROMPT
+    assert (
+        "questionando se deve prosseguir" in TRIAGE_SYSTEM_PROMPT
+        or "questione o cliente cordialmente na mensagem se deve prosseguir com o envio/geração da proposta"
+        in TRIAGE_SYSTEM_PROMPT
+    )
     assert "reitere cordialmente o pedido dos dados que ainda faltam" in TRIAGE_SYSTEM_PROMPT
 
 
@@ -200,6 +293,7 @@ def test_parse_decision_rejects_invalid_json():
 
 def test_process_ticket_end_to_end_mocked(sample_outage_webhook_payload):
     """Testa o fluxo de Responses API com o endpoint de projeto do Foundry."""
+    sample_outage_webhook_payload["issue"]["fields"]["customfield_10119"] = "Anydesk"
     agent = JiraTriageAgent()
     payload = JiraWebhookPayload.model_validate(sample_outage_webhook_payload)
     mock_client = MagicMock()
@@ -233,6 +327,9 @@ def test_process_ticket_end_to_end_mocked(sample_outage_webhook_payload):
     assert (
         mock_client.responses.create.call_args.kwargs["model"]
         == agent.settings.azure_ai_model_deployment_name
+    )
+    assert (
+        '"customfield_10119": "Anydesk"' in mock_client.responses.create.call_args.kwargs["input"]
     )
 
 

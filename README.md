@@ -6,35 +6,23 @@ Agente de Inteligência Artificial que usa um modelo e a Responses API do **Micr
 
 ## 📌 Arquitetura da Solução
 
-O fluxo operacional é orientado a eventos (*event-driven*), garantindo tempo de resposta quase em tempo real e eficiência de custos com computação serverless:
+O diagrama abaixo representa os caminhos implementados: processamento Jira compartilhado pela
+Function e pelo Hosted Agent, operações comerciais no Jira/Assets e consulta/sincronização da base
+Confluence. A marca OSB Software identifica o agente e seu fluxo de negócio.
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User as Solicitante comercial
-    participant Jira as Jira CRM (projeto OP)
-    participant Func as Azure Function (Python v2)
-    participant KV as Azure Key Vault
-    participant Foundry as Microsoft Foundry Responses API
-    participant LLM as Modelo GPT-5
-    participant JiraConnector as Cliente Jira do projeto
-    participant JiraAPI as Jira REST / Assets API
+![Diagrama da arquitetura atual do agente comercial OSB Software](./docs/architecture-osb-jira-agent.svg)
 
-    User->>Jira: Cria lead ou responde ao comentário público
-    Jira->>Func: Webhook issue_created / issue_updated / comment_created
-    Func->>Func: Valida assinatura / segredo
-    Func->>Foundry: Envia contexto comercial e ferramentas
-    Foundry->>LLM: Analisa pedido e dados do registro CRM
-    LLM-->>Foundry: Solicita ferramenta autorizada ou retorna resumo JSON
-    Foundry-->>Func: Retorna function call ou decisão
-    Func->>JiraConnector: Despacha a ferramenta solicitada
-    JiraConnector->>JiraAPI: Executa operação tipada e permitida
-    JiraAPI-->>JiraConnector: Retorna resultado da operação
-    JiraConnector-->>Func: Retorna resultado da ferramenta
-    Func->>Foundry: Envia resultado da ferramenta
-    Foundry-->>Func: Retorna decisão final validada
-    Func-->>Jira: Responde com resumo da operação
-```
+### Fluxos suportados
+
+| Fluxo | Descrição sintética |
+|---|---|
+| Entrada e triagem de leads | Webhooks Jira de criação, atualização e comentário passam pela Function; também é possível criar leads por solicitação. O agente valida o evento, lê dados/comentários e ignora comentários próprios para evitar ciclos. |
+| Atendimento pelo Hosted Agent | Invocations autenticadas pelo Microsoft Entra reutilizam o processamento comercial; a resposta é transmitida por SSE. Este endpoint não substitui o webhook Jira. |
+| Qualificação e proposta | Consulta dados e comentários do lead, confirma software/fabricante no Assets, solicita dados comerciais faltantes e retoma a análise quando chega uma resposta; só gera a proposta com os nove dados obrigatórios confirmados. |
+| Itens de proposta e compras | Consulta itens e campos, pesquisa produtos no Assets, encaminha itens para Compras e registra preço unitário/cenário quando solicitado; alterações dependem da habilitação de escrita. |
+| Dúvidas e escalação humana | Pesquisa no Confluence com RAG; responde com conteúdo encontrado ou encaminha o lead ao grupo comercial humano quando a base não oferece resposta suficiente. |
+| Anexos e apoio operacional | Consulta campos/transições, lista e baixa anexos dentro do limite configurado, adiciona notas internas e diagnostica workspaces, schemas e tipos de objeto do Assets. |
+| Atualização da base de conhecimento | Webhook de publicação do Confluence ou chamada manual a `/kb-refresh` dispara uma sincronização integral do cache; não é uma atualização incremental. |
 
 > **Importante:** este projeto não configura nem usa um conector Jira nativo do Foundry. O Foundry
 > fornece o modelo e o function calling; as ferramentas são definidas pelo projeto, e a Azure
@@ -158,6 +146,9 @@ O serviço em `azure.yaml` declara um Hosted Agent de código Python 3.13 usando
 para `src/webhook_handler.py`, a mesma rotina chamada pela Function. A validação do payload, o
 filtro de eventos e a triagem são compartilhados; cada entrada autentica segundo seu próprio
 limite de confiança.
+Campos Jira `customfield_*` recebidos no webhook são incluídos como snapshot no contexto do modelo.
+Quando a solicitação pede valores ou comentários atuais, o agente consulta as ferramentas Jira de
+leitura e distingue o estado consultado do snapshot do evento.
 
 O Hosted Agent usa um projeto Foundry e um deployment de modelo. O Terraform provisiona a conta,
 o projeto e o deployment GPT-5 para a Function; `azure.yaml` não contém endpoint, ID ARM nem
@@ -166,12 +157,14 @@ credenciais. O runtime fornece `FOUNDRY_PROJECT_ENDPOINT`, aceito como alias de
 deployment provisionado. O ambiente Azure ativo usa `ENVIRONMENT=development`.
 
 As credenciais Jira e o segredo do webhook são dados sensíveis: não os coloque em `azure.yaml`.
-O Hosted Agent lê `jira-api-token` e `jira-assets-access-token` diretamente do Azure Key Vault
-usando a identidade do próprio agente (`DefaultAzureCredential`). O segredo `jira-webhook-secret`
-é validado pela Azure Function, que recebe os webhooks diretos do Jira. A identidade Hosted Agent
-recebe somente `Key Vault Secrets User` no vault; os valores não são copiados para variáveis do
-`azd`, manifestos ou logs. As configurações não secretas `JIRA_*` e `JIRA_KEY_VAULT_URL` são
-fornecidas pelo ambiente `azd`.
+O Hosted Agent lê `jira-api-token` e, se existir, `jira-assets-access-token` diretamente do Azure
+Key Vault usando a identidade do próprio agente (`DefaultAzureCredential`). O token Jira é também
+usado pelo Confluence por padrão. O segredo `jira-webhook-secret` é validado pela Azure Function,
+que recebe os webhooks diretos do Jira. A identidade Hosted Agent precisa de `Key Vault Secrets
+User` no vault; o Terraform deste repositório configura essa permissão para a Function, mas não
+para a identidade Hosted Agent. Os valores não são copiados para variáveis do `azd`, manifestos ou
+logs. As configurações não secretas `JIRA_*` e `JIRA_KEY_VAULT_URL` são fornecidas pelo ambiente
+`azd`.
 
 Como o serviço usa `dependencyResolution: remote_build`, mantenha `requirements.txt` sincronizado
 com `uv.lock` sempre que alterar dependências de runtime:
@@ -216,6 +209,9 @@ uv sync --all-extras --group dev
 
 Copie os modelos de configuração e preencha com as credenciais do seu ambiente:
 
+Para entender o papel de cada arquivo de configuração e quando ele é utilizado, consulte
+[SETTINGS.md](./SETTINGS.md).
+
 ```bash
 test -f .env || cp .env.example .env
 test -f local.settings.json || cp local.settings.json.example local.settings.json
@@ -238,11 +234,14 @@ Variáveis chave em `.env` / `local.settings.json`:
 - `JIRA_TEAM_ACCOUNT_IDS`: JSON opcional que associa nomes de equipe a `accountId`s do Jira, se uma atribuição for explicitamente solicitada.
 - `JIRA_ALLOWED_PROJECT_KEYS`: lista JSON dos projetos que as ferramentas podem acessar.
 - `JIRA_ENABLE_WRITE_OPERATIONS`: habilita explicitamente criação, comentários, transições e write-back.
-- `CONFLUENCE_SPACE_URL`: URL completa do espaço Confluence da base de conhecimento (sem valor padrão; configure para sua instância).
-- `CONFLUENCE_SPACE_KEY`: Chave do espaço Confluence (sem valor padrão; configure para seu espaço).
+- `CONFLUENCE_SPACE_URL`: URL completa do espaço Confluence da base de conhecimento (neste projeto, `https://loonar-osb.atlassian.net/wiki/spaces/osbjiraage`).
+- `CONFLUENCE_BASE_URL`: URL base da API do Confluence (`https://loonar-osb.atlassian.net/wiki`).
+- `CONFLUENCE_SPACE_KEY`: Chave do espaço Confluence (`osbjiraage` neste projeto).
+- `CONFLUENCE_API_EMAIL` e `CONFLUENCE_API_TOKEN`: credenciais opcionais exclusivas do Confluence;
+  se não forem definidas, o conector usa `JIRA_API_EMAIL` e `JIRA_API_TOKEN`.
 - `CONFLUENCE_WEBHOOK_SECRET`: Token compartilhado exigido pelo endpoint do webhook do Confluence.
 - `CONFLUENCE_WEBHOOK_SECRET_HEADER`: Nome do cabeçalho com o token (padrão `X-Atlassian-Webhook-Secret`).
-- `JIRA_REQUEST_DETAILS_FIELD_ID`: ID opcional do campo Jira para "Detalhes da Solicitação".
+- `JIRA_REQUEST_DETAILS_FIELD_ID`: campo Jira para "Detalhes da Solicitação" (padrão `customfield_10120` na instância consultada).
 - `KB_CACHE_DIR`: Diretório para persistência do cache RAG (padrão `.cache/kb`).
 - `KB_CACHE_TTL_SECONDS`: TTL do cache da base de conhecimento em segundos (padrão `3600`).
 - `KB_MIN_CONFIDENCE_SCORE`: Limiar de confiança para validação de respostas encontradas (padrão `0.35`).
@@ -256,6 +255,10 @@ ficam sem alteração. A atribuição só é feita para equipes presentes em `JI
 As ferramentas rejeitam chaves de issue
 fora de `JIRA_ALLOWED_PROJECT_KEYS` e verificam se a transição indicada está disponível antes de
 executá-la. Sem credenciais Jira, o agente não consegue consultar nem alterar issues.
+O conector também consulta, em modo somente leitura, os metadados de criação de um tipo de issue
+em um projeto permitido (`get_project_issue_type_metadata`). A criação de leads resolve os campos
+comerciais pelo nome e tipo retornados pelo Jira, incluindo contato, telefone e detalhes da solicitação;
+as opções como origem do lead são validadas contra as opções atuais do campo.
 
 ### Usar Foundry Local durante o desenvolvimento
 
@@ -344,8 +347,11 @@ O agente conta com um mecanismo RAG para esclarecer dúvidas apresentadas pelo l
 recepção (no campo `Detalhes da Solicitação` ou descrição) e quando o lead responde a comentários:
 
 1. **Espaço Confluence como Base de Conhecimento**:
-   - Configure `CONFLUENCE_SPACE_URL` ou `CONFLUENCE_BASE_URL` e `CONFLUENCE_SPACE_KEY` para sua instância; não há um espaço padrão.
-   - As credenciais de acesso herdam de `JIRA_API_EMAIL` e `JIRA_API_TOKEN` ou podem ser customizadas por `CONFLUENCE_API_EMAIL` e `CONFLUENCE_API_TOKEN`.
+   - Este projeto usa `CONFLUENCE_SPACE_URL=https://loonar-osb.atlassian.net/wiki/spaces/osbjiraage`,
+     `CONFLUENCE_BASE_URL=https://loonar-osb.atlassian.net/wiki` e
+     `CONFLUENCE_SPACE_KEY=osbjiraage`; os exemplos e o Terraform já trazem esses valores.
+   - Por padrão, o acesso usa `JIRA_API_EMAIL` e `JIRA_API_TOKEN`. Só configure
+     `CONFLUENCE_API_EMAIL` e `CONFLUENCE_API_TOKEN` se forem diferentes.
 
 2. **Cache local e RAG**:
    - As páginas são particionadas em chunks com sobreposição e indexadas via algoritmo BM25 com normalização para português (remoção de acentos e stopwords).
@@ -371,13 +377,17 @@ testá-lo em uma Function de desenvolvimento publicada.
 
 1. Gere um token aleatório forte e configure-o como `CONFLUENCE_WEBHOOK_SECRET`:
    - localmente, em `.env` ou `local.settings.json`;
-   - na Azure Function publicada, em **Settings / Environment variables / App settings**. O
-     Terraform deste repositório não configura esse valor; defina-o diretamente na Function App e
-     não o coloque em `terraform.tfvars`, no código ou em arquivos versionados.
+   - na Azure Function publicada, preencha `confluence_webhook_secret` em `terraform.tfvars`.
+     Use um segredo aleatório exclusivo de pelo menos 32 caracteres; não reutilize o token da API
+     Jira. O Terraform valida o tamanho, grava o valor no Key Vault e configura a referência no App
+     setting da Function.
+     Se a Function não for gerenciada pelo Terraform, configure o segredo no Key Vault e seu
+     App setting por referência; não o coloque no código ou em arquivos versionados.
 2. Na mesma configuração, defina `CONFLUENCE_WEBHOOK_SECRET_HEADER` como
-   `X-Atlassian-Webhook-Secret` (o padrão) ou escolha outro nome de cabeçalho. O nome precisa ser
-   exatamente o mesmo usado na regra do Confluence. Em produção, sem `CONFLUENCE_WEBHOOK_SECRET`
-   configurado, o endpoint rejeita a requisição.
+   `X-Atlassian-Webhook-Secret` (o padrão) ou escolha outro nome de cabeçalho usando
+   `confluence_webhook_secret_header` em `terraform.tfvars`. O nome precisa ser exatamente o mesmo
+   usado na regra do Confluence. Em produção, sem `CONFLUENCE_WEBHOOK_SECRET` configurado, o
+   endpoint rejeita a requisição.
 3. No Confluence Cloud, crie uma regra de automação no espaço da base de conhecimento:
    - escolha o gatilho de publicação da página (para novas páginas e republicações/alterações);
    - adicione a ação **Send web request**;
@@ -501,6 +511,8 @@ Para obter apenas a URL (útil para copiar ou scripts de automação):
 | **Comment** | **Created** | `comment_created` / `jira:issue_comment_created` | **Essencial para diálogo e autonomia**: quando o solicitante responde às perguntas do agente fornecendo dados pendentes (ex: prazos, produtos, quantidades), o agente retoma o fluxo automaticamente sem intervenção humana. Comentários criados pelo próprio agente são detectados e ignorados automaticamente para evitar loops. |
 
 > **Nota de configuração:** Certifique-se de marcar tanto os eventos de **Issue** (`created` e `updated`) quanto de **Comment** (`created`). Sem o evento de comentário, o agente não saberá quando o cliente responder às solicitações de esclarecimento.
+>
+> Se o payload recebido não incluir `webhookEvent`, uma issue válida ainda será processada. IDs numéricos do Jira são normalizados para texto durante a validação.
 
 7. Salve o webhook.
 
@@ -523,6 +535,11 @@ O `terraform.tfvars` local gerado a partir de `local.settings.json` é ignorado 
 cria uma conta Azure AI Services, um projeto Foundry e um deployment GPT-5 na assinatura indicada
 por `subscription_id`; o endpoint e o Resource ID usados pelo app são derivados desses recursos.
 O deployment usa `GlobalStandard` com capacidade inicial de 50 mil tokens por minuto.
+As variáveis `confluence_space_url`, `confluence_base_url` e `confluence_space_key` configuram a
+base Confluence da Function. Quando necessárias credenciais Confluence independentes, informe
+`confluence_api_email` e `confluence_api_token`; configure também `confluence_webhook_secret` para
+habilitar a autenticação do webhook. O Terraform guarda os tokens e o segredo no Key Vault e
+configura referências para a Function, sem colocar os valores nos App settings em texto simples.
 
 Antes de qualquer implantação futura, confirme:
 
@@ -590,3 +607,16 @@ O `agent-dev-cli` está no grupo `dev` do `pyproject.toml`; instale-o com
 `uv sync --all-extras --group dev` (ou `make install`). No VS Code, pressione F5 e escolha
 **Attach to Foundry Hosted Agent**: a task executa `agentdev run` na porta 8088 com debugpy na
 porta 5679, abre o Agent Inspector e encerra as tasks quando a sessão de depuração termina.
+
+Para coletar traces localmente, antes de pressionar F5 abra **Foundry Toolkit** na Activity Bar,
+acesse **Developer Tools > Monitor > Tracing** e inicie o collector. A task do Hosted Agent exporta
+OpenTelemetry por HTTP/protobuf para `http://localhost:4318`; depois de exercitar o agente, atualize
+a lista de traces nessa mesma tela. O runtime instrumenta requisições e chamadas de modelo; cada
+execução de ferramenta Jira também produz um span `jira.execute_tool`, com o nome da ferramenta,
+sem incluir argumentos, respostas ou conteúdo de prompts. A captura de conteúdo está desativada.
+
+No ambiente hospedado, o runtime do protocolo Invocations já configura OpenTelemetry. Para ver os
+traces do Hosted Agent no Foundry, conecte um recurso Application Insights ao projeto Foundry; a
+plataforma injeta a connection string no container. Consulte
+[configuração de tracing para hosted agents](https://learn.microsoft.com/azure/foundry/agents/how-to/configure-hosted-agent-telemetry)
+e [tracing local no Foundry Toolkit](https://learn.microsoft.com/azure/foundry/how-to/develop/vs-code-tracing).

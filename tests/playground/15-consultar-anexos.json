@@ -1,11 +1,11 @@
 {
   "webhookEvent": "jira:issue_updated",
   "issue": {
-    "id": "651204",
-    "key": "OP-8402",
+    "id": "651497",
+    "key": "OP-8885",
     "fields": {
-      "summary": "Teste Playground: listar metadados de anexos",
-      "description": "Liste os metadados de anexos de OP-8402 (nome, tipo, tamanho e data, se disponíveis). Não baixe nem reproduza o conteúdo de nenhum anexo."
+      "summary": "[TESTE Agente IA] Novo Lead do Site - Anydesk",
+      "description": "Liste os metadados dos anexos de OP-8885. O snapshot de referência não tinha anexos; confirme o estado atual e, se a lista continuar vazia, informe que não há anexos. Não baixe nem reproduza conteúdo."
     }
   }
 }

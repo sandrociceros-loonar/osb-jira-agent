@@ -1,10 +1,10 @@
 {
   "webhookEvent": "jira:issue_updated",
   "issue": {
-    "id": "651204",
-    "key": "OP-8402",
+    "id": "651497",
+    "key": "OP-8885",
     "fields": {
-      "summary": "Teste Playground: iniciar trabalho no lead",
+      "summary": "[TESTE Agente IA] Novo Lead do Site - Anydesk",
       "description": "No sandbox, inicie o trabalho neste lead usando a transição específica do fluxo e a classificação de licença somente se os dados obrigatórios estiverem confirmados e a transição estiver disponível. Consulte o estado atual antes da escrita. Se qualquer pré-condição falhar, não execute a transição e explique o que falta."
     }
   }

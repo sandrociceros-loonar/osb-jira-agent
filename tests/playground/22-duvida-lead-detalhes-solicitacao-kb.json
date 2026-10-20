@@ -1,12 +1,12 @@
 {
   "webhookEvent": "jira:issue_created",
   "issue": {
-    "id": "651204",
-    "key": "OP-8402",
+    "id": "651497",
+    "key": "OP-8885",
     "fields": {
-      "summary": "Novo Lead: Aquisição de licenças com dúvida sobre SLA",
-      "description": "Recebimento de novo lead interessado em licenças de software corporativo. O lead preencheu detalhes no formulário inicial.",
-      "customfield_10010": {
+      "summary": "[TESTE Agente IA] Novo Lead do Site - Anydesk",
+      "description": "Cenário de teste: o texto abaixo simula uma nova pergunta colocada em Detalhes da Solicitação. No snapshot real de OP-8885 esse campo estava vazio; não trate a pergunta simulada como histórico existente no Jira.",
+      "customfield_10120": {
         "type": "doc",
         "version": 1,
         "content": [

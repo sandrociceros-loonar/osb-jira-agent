@@ -81,6 +81,18 @@ variable "jira_lead_issue_type_id" {
   default     = "12716"
 }
 
+variable "jira_manufacturer_field_id" {
+  description = "ID opcional do campo de fabricante editável no lead Jira"
+  type        = string
+  default     = ""
+}
+
+variable "jira_skip_manufacturer_update_if_not_editable" {
+  description = "Permite webhook com fabricante pendente quando o campo não está editável; bloqueia a geração de proposta"
+  type        = bool
+  default     = false
+}
+
 variable "jira_enable_write_operations" {
   description = "Habilita operações Jira de criação, comentários, transições e write-back"
   type        = bool
@@ -102,14 +114,22 @@ variable "jira_transition_ids" {
 variable "jira_api_email" {
   description = "E-mail da conta Atlassian usada pelo conector Jira"
   type        = string
-  default     = ""
+
+  validation {
+    condition     = length(trimspace(var.jira_api_email)) > 0
+    error_message = "jira_api_email deve ser informado para autenticar no Jira e no Confluence."
+  }
 }
 
 variable "jira_api_token" {
   description = "Token de API Atlassian armazenado no Key Vault"
   type        = string
   sensitive   = true
-  default     = ""
+
+  validation {
+    condition     = length(trimspace(var.jira_api_token)) > 0
+    error_message = "jira_api_token deve ser informado para autenticar no Jira e no Confluence."
+  }
 }
 
 variable "jira_team_account_ids" {
@@ -122,10 +142,63 @@ variable "jira_webhook_secret" {
   description = "Segredo compartilhado para validação do webhook"
   type        = string
   sensitive   = true
+
+  validation {
+    condition     = length(trimspace(var.jira_webhook_secret)) >= 32
+    error_message = "jira_webhook_secret deve ter pelo menos 32 caracteres."
+  }
 }
 
 variable "jira_webhook_secret_header" {
   description = "Cabeçalho HTTP usado pelo Jira para enviar o segredo do webhook"
+  type        = string
+  default     = "X-Atlassian-Webhook-Secret"
+}
+
+variable "confluence_space_url" {
+  description = "URL do espaço Confluence usado como base de conhecimento"
+  type        = string
+  default     = "https://loonar-osb.atlassian.net/wiki/spaces/osbjiraage"
+}
+
+variable "confluence_base_url" {
+  description = "URL base da API do Confluence Cloud"
+  type        = string
+  default     = "https://loonar-osb.atlassian.net/wiki"
+}
+
+variable "confluence_space_key" {
+  description = "Chave do espaço Confluence usado como base de conhecimento"
+  type        = string
+  default     = "osbjiraage"
+}
+
+variable "confluence_api_email" {
+  description = "E-mail Atlassian opcional para autenticação no Confluence; vazio usa o e-mail Jira"
+  type        = string
+  default     = ""
+}
+
+variable "confluence_api_token" {
+  description = "Token opcional de API Confluence armazenado no Key Vault"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "confluence_webhook_secret" {
+  description = "Segredo do webhook Confluence armazenado no Key Vault"
+  type        = string
+  sensitive   = true
+
+  validation {
+    condition     = length(trimspace(var.confluence_webhook_secret)) >= 32
+    error_message = "confluence_webhook_secret deve ter pelo menos 32 caracteres."
+  }
+}
+
+variable "confluence_webhook_secret_header" {
+  description = "Cabeçalho HTTP usado pela automação do Confluence para enviar o segredo"
   type        = string
   default     = "X-Atlassian-Webhook-Secret"
 }

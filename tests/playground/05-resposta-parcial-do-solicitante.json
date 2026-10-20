@@ -1,16 +1,16 @@
 {
   "webhookEvent": "jira:issue_comment_created",
   "issue": {
-    "id": "651204",
-    "key": "OP-8402",
+    "id": "651497",
+    "key": "OP-8885",
     "fields": {
-      "summary": "Teste Playground: resposta parcial do solicitante",
-      "description": "Continue a avaliação deste lead usando os campos atuais e todo o histórico de comentários do Jira. Considere a resposta recebida, atualize mentalmente a lista de dados completos e pendentes, e peça publicamente somente as informações ainda ausentes, em tom cordial e comercial diretamente ao lead/contato (não ao operador Jira). Como o Jira pode enviar o comentário por e-mail, não inclua detalhes internos, cabeçalho automático nem assinatura. Não repita perguntas já respondidas e não gere proposta enquanto faltar qualquer dado obrigatório."
+      "summary": "[TESTE Agente IA] Novo Lead do Site - Anydesk",
+      "description": "Cenário de teste para OP-8885: considere o comentário recebido como resposta nova, releia o estado atual no Jira e atualize a lista de dados completos e pendentes. Não considere faturamento mensal: o snapshot mostra F5 Software LTDA, 05 dias corridos e depósito bancário. Peça cordialmente apenas o que ainda faltar entre forecast, probabilidade, próximo follow-up, validade, informações da proposta e edição exata do Anydesk. Não gere proposta enquanto houver pendência."
     }
   },
   "comment": {
     "id": "900001",
-    "body": "Para complementar a solicitação: probabilidade de 70%, próximo follow-up em 2026-10-20 e faturamento mensal. Os demais dados ainda serão confirmados.",
+    "body": "Para complementar a solicitação: probabilidade de 70% e próximo follow-up em 2026-10-20. Ainda vou confirmar o forecast, a validade da proposta, as informações que devem constar nela e a edição exata do Anydesk.",
     "author": {
       "accountId": "qa-requester",
       "displayName": "Solicitante QA"

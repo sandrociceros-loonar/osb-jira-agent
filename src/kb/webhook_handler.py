@@ -3,12 +3,17 @@
 import hashlib
 import hmac
 import json
+import time
 from collections.abc import Mapping
 from typing import Any
 
 from src.config import Settings, get_settings
 from src.kb.rag_engine import RAGEngine
-from src.utils.logger import setup_logger
+from src.utils.logger import (
+    format_structured_log,
+    sanitize_webhook_headers,
+    setup_logger,
+)
 
 logger = setup_logger("confluence-webhook")
 
@@ -75,7 +80,13 @@ def process_confluence_webhook(
     settings: Settings | None = None,
 ) -> tuple[int, dict[str, Any]]:
     """Processa eventos de webhook do Confluence para atualização do cache RAG."""
+    start_time = time.monotonic()
     app_settings = settings or get_settings()
+    safe_headers = sanitize_webhook_headers(
+        headers,
+        extra_secret_headers=(app_settings.confluence_webhook_secret_header,),
+    )
+    body_size = len(raw_body) if raw_body else 0
 
     if require_signature:
         try:
@@ -87,31 +98,87 @@ def process_confluence_webhook(
                 environment=app_settings.environment,
             )
         except ConfluenceWebhookSecurityError as exc:
-            logger.warning("Falha de autenticação no webhook Confluence: %s", exc)
+            duration_ms = round((time.monotonic() - start_time) * 1000, 2)
+            logger.warning(
+                format_structured_log(
+                    "CONFLUENCE_WEBHOOK_RESULT",
+                    status="unauthorized",
+                    status_code=401,
+                    body_size_bytes=body_size,
+                    headers=safe_headers,
+                    reason=str(exc),
+                    duration_ms=duration_ms,
+                )
+            )
             return 401, {"error": "Unauthorized", "details": str(exc)}
         except Exception as exc:
-            logger.error("Erro inesperado na autenticação Confluence: %s", exc)
+            duration_ms = round((time.monotonic() - start_time) * 1000, 2)
+            logger.error(
+                format_structured_log(
+                    "CONFLUENCE_WEBHOOK_RESULT",
+                    status="verification_error",
+                    status_code=500,
+                    body_size_bytes=body_size,
+                    headers=safe_headers,
+                    reason=str(exc),
+                    duration_ms=duration_ms,
+                )
+            )
             return 500, {"error": "Internal server error during verification"}
 
     try:
         data = json.loads(raw_body) if raw_body else {}
     except Exception as exc:
-        logger.error("JSON inválido no corpo do webhook Confluence: %s", exc)
+        duration_ms = round((time.monotonic() - start_time) * 1000, 2)
+        logger.error(
+            format_structured_log(
+                "CONFLUENCE_WEBHOOK_RESULT",
+                status="invalid_json",
+                status_code=400,
+                body_size_bytes=body_size,
+                headers=safe_headers,
+                reason=str(exc),
+                duration_ms=duration_ms,
+            )
+        )
         return 400, {"error": "Invalid JSON body"}
 
-    # Extrair evento e espaço
+    # Extrair evento, espaço e página
     event = data.get("event") or data.get("webhookEvent") or data.get("action")
-    space_data = data.get("space") or data.get("page", {}).get("space", {})
+    page_data = data.get("page") if isinstance(data.get("page"), dict) else {}
+    space_data = data.get("space") or page_data.get("space", {})
     space_key = (
         space_data.get("key")
         if isinstance(space_data, dict)
         else data.get("space_key") or data.get("spaceKey")
     )
 
-    logger.info("Webhook Confluence recebido. Evento: %s, Espaço: %s", event, space_key)
+    logger.info(
+        format_structured_log(
+            "CONFLUENCE_WEBHOOK_RECEIVED",
+            event=event,
+            space_key=space_key,
+            page_id=page_data.get("id"),
+            page_title=page_data.get("title"),
+            body_size_bytes=body_size,
+            headers=safe_headers,
+        )
+    )
 
     # Se um espaço foi indicado e não for o configurado, podemos ignorar
     if space_key and space_key.strip().lower() != rag_engine.space_key.lower():
+        duration_ms = round((time.monotonic() - start_time) * 1000, 2)
+        logger.info(
+            format_structured_log(
+                "CONFLUENCE_WEBHOOK_RESULT",
+                status="ignored",
+                status_code=200,
+                event=event,
+                space_key=space_key,
+                target_space_key=rag_engine.space_key,
+                duration_ms=duration_ms,
+            )
+        )
         return 200, {
             "status": "ignored",
             "message": f"Evento para espaço '{space_key}' ignorado (espaço alvo: '{rag_engine.space_key}').",
@@ -121,11 +188,35 @@ def process_confluence_webhook(
     try:
         sync_result = rag_engine.sync_cache()
         status_code = 200 if sync_result.get("success") else 500
+        duration_ms = round((time.monotonic() - start_time) * 1000, 2)
+        logger.info(
+            format_structured_log(
+                "CONFLUENCE_WEBHOOK_RESULT",
+                status="cache_updated" if sync_result.get("success") else "cache_update_failed",
+                status_code=status_code,
+                event=event,
+                space_key=space_key,
+                details=sync_result,
+                duration_ms=duration_ms,
+            )
+        )
         return status_code, {
             "status": "cache_updated" if sync_result.get("success") else "cache_update_failed",
             "event": event,
             "details": sync_result,
         }
     except Exception as exc:
-        logger.error("Erro ao sincronizar cache via webhook: %s", exc, exc_info=True)
+        duration_ms = round((time.monotonic() - start_time) * 1000, 2)
+        logger.error(
+            format_structured_log(
+                "CONFLUENCE_WEBHOOK_RESULT",
+                status="exception",
+                status_code=500,
+                event=event,
+                space_key=space_key,
+                reason=str(exc),
+                duration_ms=duration_ms,
+            ),
+            exc_info=True,
+        )
         return 500, {"error": "Failed to sync cache", "details": str(exc)}

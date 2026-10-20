@@ -4,6 +4,7 @@ import json
 
 import azure.functions as func
 
+from src.config import get_settings
 from src.kb import get_rag_engine
 from src.kb.webhook_handler import process_confluence_webhook
 from src.utils.logger import setup_logger
@@ -28,7 +29,19 @@ def health_check(req: func.HttpRequest) -> func.HttpResponse:
 def jira_webhook_trigger(req: func.HttpRequest) -> func.HttpResponse:
     """Recebe e processa eventos de webhook disparados pelo Jira Service Management."""
     logger.info("Recebida requisição no endpoint /api/jira-webhook")
-    status_code, response_body = process_jira_webhook(req.get_body(), req.headers)
+    settings = get_settings()
+    wait_timeout: float | None = settings.jira_webhook_response_timeout_seconds
+    params = getattr(req, "params", None) or {}
+    if str(params.get("wait", "")).strip().lower() in {"true", "1", "yes"}:
+        wait_timeout = None
+    elif str(params.get("async", "")).strip().lower() in {"true", "1", "yes"}:
+        wait_timeout = 0.0
+
+    status_code, response_body = process_jira_webhook(
+        req.get_body(),
+        req.headers,
+        wait_timeout_seconds=wait_timeout,
+    )
     return func.HttpResponse(
         body=json.dumps(response_body, indent=2),
         status_code=status_code,

@@ -194,3 +194,123 @@ def test_rag_engine_fallback_to_confluence_when_cache_updating(tmp_path):
         space_key="osbjiraage",
         limit=3,
     )
+
+
+def test_rag_engine_read_link_from_cache_and_enforces_domain(tmp_path):
+    cache = KBCacheManager(cache_dir=tmp_path, space_key="osbjiraage")
+    mock_client = MagicMock()
+    mock_client.base_url = "https://loonar-osb.atlassian.net/wiki"
+
+    engine = RAGEngine(
+        confluence_client=mock_client,
+        cache_manager=cache,
+        min_confidence_score=0.2,
+    )
+
+    page = KBPage(
+        id="5001",
+        title="Política de Licenças e Suporte",
+        url="https://loonar-osb.atlassian.net/wiki/spaces/osbjiraage/pages/5001",
+        space_key="osbjiraage",
+        text="Licenças do Produto X incluem 1 ano de atualização e suporte prioritário.",
+    )
+    cache.save_cache([page], engine.chunk_page(page))
+
+    # Leitura do link que está no cache em memória
+    res = engine.read_link("https://loonar-osb.atlassian.net/wiki/spaces/osbjiraage/pages/5001")
+    assert res["success"] is True
+    assert res["same_domain"] is True
+    assert res["title"] == "Política de Licenças e Suporte"
+    assert "suporte prioritário" in res["content"]
+    # Não precisou chamar o cliente Confluence porque estava em cache
+    mock_client.read_link.assert_not_called()
+
+    # Leitura de link externo deve ser bloqueada
+    res_ext = engine.read_link("https://external-vendor.com/docs")
+    assert res_ext["success"] is False
+    assert res_ext["same_domain"] is False
+    assert "apenas links no mesmo domínio" in res_ext["error"]
+
+
+def test_rag_engine_search_enriches_matches_with_same_domain_links(tmp_path):
+    cache = KBCacheManager(cache_dir=tmp_path, space_key="osbjiraage")
+    mock_client = MagicMock()
+    mock_client.base_url = "https://loonar-osb.atlassian.net/wiki"
+
+    engine = RAGEngine(
+        confluence_client=mock_client,
+        cache_manager=cache,
+        min_confidence_score=0.2,
+    )
+
+    # Página principal com link para outra página de suporte
+    linked_page = KBPage(
+        id="7002",
+        title="Detalhes Técnicos de Suporte",
+        url="https://loonar-osb.atlassian.net/wiki/spaces/osbjiraage/pages/7002",
+        space_key="osbjiraage",
+        text="Atendimento 24/7 com tempo de resposta de até 30 minutos.",
+    )
+
+    main_page = KBPage(
+        id="7001",
+        title="FAQ Geral de Produtos",
+        url="https://loonar-osb.atlassian.net/wiki/spaces/osbjiraage/pages/7001",
+        space_key="osbjiraage",
+        text="Para suporte ao produto consulte Detalhes Técnicos (https://loonar-osb.atlassian.net/wiki/spaces/osbjiraage/pages/7002).",
+        same_domain_links=[
+            {
+                "text": "Detalhes Técnicos",
+                "url": "https://loonar-osb.atlassian.net/wiki/spaces/osbjiraage/pages/7002",
+            }
+        ],
+    )
+
+    all_pages = [main_page, linked_page]
+    all_chunks = []
+    for p in all_pages:
+        all_chunks.extend(engine.chunk_page(p))
+    cache.save_cache(all_pages, all_chunks)
+
+    # Ao buscar pela dúvida, o match enriquece com o conteúdo do link do mesmo domínio
+    res = engine.search("suporte ao produto")
+    assert res.found is True
+    assert len(res.matches) >= 1
+    match = res.matches[0]
+    assert len(match.same_domain_links) == 1
+    link_info = match.same_domain_links[0]
+    assert link_info["url"] == "https://loonar-osb.atlassian.net/wiki/spaces/osbjiraage/pages/7002"
+    assert "Atendimento 24/7 com tempo de resposta" in link_info["content"]
+
+
+def test_rag_engine_search_with_direct_same_domain_url(tmp_path):
+    cache = KBCacheManager(cache_dir=tmp_path, space_key="osbjiraage")
+    mock_client = MagicMock()
+    mock_client.base_url = "https://loonar-osb.atlassian.net/wiki"
+
+    engine = RAGEngine(
+        confluence_client=mock_client,
+        cache_manager=cache,
+        min_confidence_score=0.2,
+    )
+
+    page = KBPage(
+        id="8001",
+        title="Guia de Integração",
+        url="https://loonar-osb.atlassian.net/wiki/spaces/osbjiraage/pages/8001",
+        space_key="osbjiraage",
+        text="Documentação da API de integração para clientes.",
+    )
+    cache.save_cache([page], engine.chunk_page(page))
+
+    # Query com URL direta do mesmo domínio
+    res = engine.search("https://loonar-osb.atlassian.net/wiki/spaces/osbjiraage/pages/8001")
+    assert res.found is True
+    assert res.confidence_score == 1.0
+    assert len(res.matches) == 1
+    assert "Documentação da API" in res.matches[0].content
+
+    # Query com URL direta externa deve falhar
+    res_ext = engine.search("https://external.com/hacker")
+    assert res_ext.found is False
+    assert "apenas links no mesmo domínio" in res_ext.message

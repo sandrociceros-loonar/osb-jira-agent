@@ -1,10 +1,10 @@
 {
   "webhookEvent": "jira:issue_comment_created",
   "issue": {
-    "id": "651204",
-    "key": "OP-8402",
+    "id": "651497",
+    "key": "OP-8885",
     "fields": {
-      "summary": "Teste Playground: evitar loop de comentário automático",
+      "summary": "[TESTE Agente IA] Novo Lead do Site - Anydesk",
       "description": "Este cenário valida que um webhook disparado pelo comentário do próprio agente não provoca outra resposta."
     }
   },

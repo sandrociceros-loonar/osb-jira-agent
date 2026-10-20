@@ -76,18 +76,39 @@ do agente existem. Para uma atualização apenas de código, **não execute `azd
 comando é para criação/alteração de infraestrutura.
 
 O serviço do Hosted Agent recebe variáveis não secretas pelo [azure.yaml](./azure.yaml). Confira
-que o ambiente `azd` contém os valores apropriados para:
+que o ambiente `azd` contém todos os valores referenciados pelo `azure.yaml`. O Terraform não
+sincroniza automaticamente suas variáveis para o ambiente `azd`; portanto, copie os valores de
+configuração não secretos do `terraform.tfvars` para o ambiente `azd` selecionado. O URI do
+Key Vault vem do output `key_vault_uri`:
 
-- `AZURE_AI_MODEL_DEPLOYMENT_NAME`, `ENVIRONMENT` e `JIRA_KEY_VAULT_URL`;
-- `JIRA_INSTANCE_URL`, `JIRA_API_EMAIL`, `JIRA_PROJECT_KEY`,
+```bash
+terraform -chdir=terraform output -raw key_vault_uri
+AZURE_DEV_USER_AGENT=microsoft_foundry_skill azd env set JIRA_KEY_VAULT_URL "<key-vault-uri>"
+```
+
+Preencha no ambiente `azd`:
+
+- `AZURE_AI_MODEL_DEPLOYMENT_NAME`, `ENVIRONMENT`, `JIRA_KEY_VAULT_URL`,
+  `AZURE_AI_MAX_TOOL_CALLS` e `LOG_LEVEL`;
+- `CONFLUENCE_SPACE_URL`, `CONFLUENCE_BASE_URL` e `CONFLUENCE_SPACE_KEY` são definidos no
+  `azure.yaml` para o espaço deste projeto; `CONFLUENCE_API_EMAIL` reutiliza `JIRA_API_EMAIL`;
+- `JIRA_WEBHOOK_SECRET_HEADER`, `JIRA_INSTANCE_URL`, `JIRA_API_EMAIL`, `JIRA_PROJECT_KEY`,
   `JIRA_ALLOWED_PROJECT_KEYS`, `JIRA_LEAD_PROJECT_KEY` e `JIRA_LEAD_ISSUE_TYPE_ID`;
 - `JIRA_TRANSITION_IDS`, `JIRA_ENABLE_WRITE_OPERATIONS`, `JIRA_TEAM_ACCOUNT_IDS` e
-  `AZURE_AI_MAX_TOOL_CALLS`;
+  `JIRA_ATTACHMENT_MAX_BYTES`;
 - `JIRA_ASSETS_CLOUD_ID`, `JIRA_ASSETS_WORKSPACE_ID`,
-  `JIRA_ASSETS_PRODUCT_OBJECT_TYPE_ID` e `JIRA_ATTACHMENT_MAX_BYTES`;
-- `JIRA_MANUFACTURER_FIELD_ID` se o campo editável do fabricante não puder ser encontrado pelo
-  nome; `JIRA_AGENT_ACCOUNT_ID` é recomendado para identificar com precisão comentários feitos
-  pela conta do agente.
+  `JIRA_ASSETS_PRODUCT_OBJECT_TYPE_ID`;
+- `JIRA_MANUFACTURER_FIELD_ID` como substituição opcional quando o nome do campo não puder ser
+  encontrado; `JIRA_AGENT_ACCOUNT_ID` é recomendado para identificar com precisão comentários
+  feitos pela conta do agente.
+- `JIRA_SKIP_MANUFACTURER_UPDATE_IF_NOT_EDITABLE` para permitir que o webhook continue com a
+  atualização do fabricante registrada como pendente quando o campo existir, mas não puder ser
+  editado. O valor padrão é `false`; mesmo habilitado, o agente não pode gerar proposta enquanto
+  essa pendência não for resolvida.
+
+Não configure `JIRA_API_TOKEN`, `CONFLUENCE_API_TOKEN` nem `CONFLUENCE_WEBHOOK_SECRET` no ambiente
+`azd`. O token Jira é lido do Key Vault pelo Hosted Agent e reutilizado para o Confluence;
+`CONFLUENCE_WEBHOOK_SECRET` é exclusivo da Function.
 
 Se o ambiente ainda não tiver esses dois valores opcionais, configure-os antes do deploy:
 
@@ -96,29 +117,56 @@ AZURE_DEV_USER_AGENT=microsoft_foundry_skill azd env set JIRA_MANUFACTURER_FIELD
 AZURE_DEV_USER_AGENT=microsoft_foundry_skill azd env set JIRA_AGENT_ACCOUNT_ID "<account-id-da-conta-do-agente>"
 ```
 
-Use o ID real do campo consultado no Jira e o account ID da conta de automação. Se o campo
-Fabricante for localizado pelo nome e o account ID não estiver disponível, deixe os valores
-vazios e confirme a configuração correspondente no Azure antes de publicar.
+Use o ID real do campo consultado no Jira e o account ID da conta de automação. A configuração
+do ID não torna o campo editável: o campo de fabricante também precisa estar no ecrã de edição do
+tipo Lead e a conta de integração precisa ter permissão para editá-lo. Para a Function provisionada
+por Terraform, configure `jira_manufacturer_field_id` em `terraform.tfvars`; para o Hosted Agent,
+configure `JIRA_MANUFACTURER_FIELD_ID` no ambiente azd. Habilite o bypass temporário com
+`jira_skip_manufacturer_update_if_not_editable = true` no Terraform para a Function e
+`JIRA_SKIP_MANUFACTURER_UPDATE_IF_NOT_EDITABLE=true` no ambiente azd para o Hosted Agent. Ative-o
+somente se for aceitável continuar o fluxo sem atualizar o campo: a proposta permanece bloqueada
+até o fabricante ser confirmado no Jira. Se o campo Fabricante for localizado pelo nome e o
+account ID não estiver disponível, deixe os valores vazios e confirme a configuração correspondente
+no Azure antes de publicar.
 
 Os tokens Jira e Assets devem continuar no Azure Key Vault. A identidade gerenciada usada pelo
 Hosted Agent precisa de permissão **Key Vault Secrets User** no vault e dos segredos esperados
-`jira-api-token` e `jira-assets-access-token`. Não use `azd env set` para tokens ou outros
-segredos.
+`jira-api-token`; `jira-assets-access-token` é opcional. Não use `azd env set` para tokens ou outros
+segredos. Por padrão, o runtime usa o token carregado de `jira-api-token` tanto no Jira quanto no
+Confluence. Se no futuro o Confluence passar a usar token próprio, armazene-o em
+`confluence-api-token` no mesmo vault; quando esse segredo não existir, o runtime mantém o fallback
+para o token Jira. `CONFLUENCE_WEBHOOK_SECRET` não deve ser configurado no Hosted Agent: ele
+protege exclusivamente a entrada de webhook da Function.
+
+O Terraform deste repositório atribui **Key Vault Secrets User** à Function App, mas não à
+identidade do Hosted Agent. Antes de usar/deployar o Hosted Agent, conceda essa função à identidade
+de execução efetivamente usada pelo Hosted Agent no Key Vault correto; não presuma que a role
+assignment da Function também o autoriza.
 
 ### 3.2 Azure Function
 
 Identifique a Function App pelo output Terraform `function_app_name` ou pelo portal Azure.
 Confirme que sua configuração contém os valores e referências ao Key Vault exigidos pela
-aplicação. Em particular:
+aplicação. O Terraform define os App settings do espaço Confluence e, se os valores forem
+preenchidos em `terraform.tfvars`, cria referências ao Key Vault para `CONFLUENCE_API_TOKEN` e
+`CONFLUENCE_WEBHOOK_SECRET`. Em particular:
 
 - `JIRA_WEBHOOK_SECRET` e `JIRA_WEBHOOK_SECRET_HEADER` devem corresponder ao segredo e header
   configurados no webhook Jira;
+- `CONFLUENCE_SPACE_URL`, `CONFLUENCE_BASE_URL`, `CONFLUENCE_SPACE_KEY`,
+  `CONFLUENCE_API_EMAIL` e `CONFLUENCE_WEBHOOK_SECRET_HEADER` devem identificar o espaço e
+  corresponder à automação Confluence; `CONFLUENCE_API_EMAIL` pode ficar vazio para reutilizar o
+  e-mail Jira e `CONFLUENCE_API_TOKEN` pode ficar vazio para reutilizar o token Jira;
+- configure `confluence_webhook_secret` em `terraform.tfvars` para receber webhooks Confluence.
+  Informe um segredo aleatório exclusivo com pelo menos 32 caracteres. O Terraform valida a
+  presença/tamanho, grava o valor no Key Vault e configura a referência na Function App;
 - `JIRA_ENABLE_WRITE_OPERATIONS` precisa permanecer `false` durante o primeiro teste sem
   escritas. Para o fluxo comercial completo, habilite escritas somente depois de validar
   permissões e IDs de transição no ambiente de teste;
 - mantenha os tokens nos segredos do Key Vault e a identidade da Function autorizada a lê-los;
-- configure `JIRA_MANUFACTURER_FIELD_ID` e, preferencialmente, `JIRA_AGENT_ACCOUNT_ID` nas
-  configurações da Function quando aplicável.
+- mantenha o campo Fabricante editável para o tipo Lead no Jira e configure
+  `jira_manufacturer_field_id` em `terraform.tfvars` se a descoberta pelo nome não for possível;
+  `JIRA_AGENT_ACCOUNT_ID` também é recomendado para a Function quando disponível.
 
 `JIRA_ENABLE_WRITE_OPERATIONS=true` habilita o conjunto de ferramentas de escrita do agente, não
 apenas comentários de lead. Faça a validação inicial em ambiente não produtivo e limite as
@@ -161,7 +209,7 @@ existentes. Para trabalho compartilhado, configure um backend remoto Azure Stora
 
 ```bash
 test -f terraform/terraform.tfvars || cp terraform/terraform.tfvars.example terraform/terraform.tfvars
-# Preencha subscription_id, configurações do Jira e segredos em um meio local seguro.
+# Preencha subscription_id, configurações do Jira/Confluence e segredos em um meio local seguro.
 terraform -chdir=terraform init
 terraform -chdir=terraform fmt -check -recursive
 terraform -chdir=terraform validate

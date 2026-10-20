@@ -4,5 +4,9 @@
     "azureFunctions.pythonVenv": ".venv",
     "azureFunctions.projectLanguage": "Python",
     "azureFunctions.projectRuntime": "~4",
-    "debug.internalConsoleOptions": "neverOpen"
+    "debug.internalConsoleOptions": "neverOpen",
+    "workbench.externalBrowser": "chrome",
+    "chat.tools.terminal.autoApprove": {
+        "./scripts/check-and-setup-dependencies.sh": true
+    }
 }

@@ -1,3 +1,12 @@
 {
-  "projectId": "0b164e18-5e3e-4058-b91e-eb2e79a7014e"
+  "projectId": "0b164e18-5e3e-4058-b91e-eb2e79a7014e",
+  "hostedAgentDeployOptions": {
+    "deploymentMethod": "zip",
+    "zipPackageMode": "remote",
+    "zipRuntime": "python_3_13",
+    "zipEntryPoint": [
+      "python",
+      "src/hosted_agent/main.py"
+    ]
+  }
 }

@@ -1,11 +1,11 @@
 {
   "webhookEvent": "jira:issue_updated",
   "issue": {
-    "id": "651204",
-    "key": "OP-8402",
+    "id": "651497",
+    "key": "OP-8885",
     "fields": {
-      "summary": "Teste Playground: pesquisar produto no Assets por fabricante",
-      "description": "Identifique o fabricante confirmado no lead ou no item da proposta e pesquise produtos no Jira Assets por esse fabricante. Relate os produtos e IDs retornados. Se o fabricante estiver ausente ou houver mais de um produto candidato sem critério de escolha claro, informe a pendência. Não encaminhe para Compras."
+      "summary": "[TESTE Agente IA] Novo Lead do Site - Anydesk",
+      "description": "Use Anydesk como fabricante somente após confirmar esse valor nos dados do lead ou no Assets. Pesquise produtos por fabricante, relate os resultados sem escolher entre variantes e não encaminhe nada para Compras. OP-8885 ainda não tem item de proposta vinculado no resultado de referência."
     }
   }
 }

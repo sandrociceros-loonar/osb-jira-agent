@@ -1,11 +1,11 @@
 {
   "webhookEvent": "jira:issue_comment_created",
   "issue": {
-    "id": "651204",
-    "key": "OP-8402",
+    "id": "651497",
+    "key": "OP-8885",
     "fields": {
-      "summary": "Lead com dúvida complexa fora da base de conhecimento",
-      "description": "Lead avaliado, porém faltam os dados de forecast, probabilidade e condições de pagamento."
+      "summary": "[TESTE Agente IA] Novo Lead do Site - Anydesk",
+      "description": "No snapshot de OP-8885 estão preenchidos faturamento F5 Software LTDA, prazo de 05 dias corridos e depósito bancário. Ainda faltam forecast, probabilidade, próximo follow-up, validade e informações para a proposta; o produto também precisa de edição exata."
     }
   },
   "comment": {

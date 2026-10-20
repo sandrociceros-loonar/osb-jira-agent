@@ -12,6 +12,8 @@ jira_project_key                   = "ITSM"
 jira_allowed_project_keys          = ["ITSM", "OP"]
 jira_lead_project_key              = "OP"
 jira_lead_issue_type_id            = "12716"
+jira_manufacturer_field_id         = ""
+jira_skip_manufacturer_update_if_not_editable = false
 jira_enable_write_operations       = false
 jira_webhook_secret_header         = "X-Atlassian-Webhook-Secret"
 jira_assets_access_token           = ""
@@ -28,10 +30,22 @@ jira_transition_ids = {
   send_item_to_purchasing          = "12"
   set_proposal_item_price          = "7"
 }
+# Required: Jira email and API token are reused by Confluence when its overrides are blank.
 jira_api_email        = ""
 jira_api_token        = ""
 jira_team_account_ids = {}
+# Required: generate a separate random secret (at least 32 characters) for Jira Webhooks.
 jira_webhook_secret   = ""
+
+confluence_space_url             = "https://loonar-osb.atlassian.net/wiki/spaces/osbjiraage"
+confluence_base_url              = "https://loonar-osb.atlassian.net/wiki"
+confluence_space_key             = "osbjiraage"
+# Reuses jira_api_email and jira_api_token when empty.
+confluence_api_email             = ""
+confluence_api_token             = ""
+# Required: generate a separate random secret (at least 32 characters) for Confluence Automation.
+confluence_webhook_secret        = ""
+confluence_webhook_secret_header = "X-Atlassian-Webhook-Secret"
 
 tags = {
   Project     = "OSB-Jira-Agent"

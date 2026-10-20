@@ -1,11 +1,11 @@
 {
   "webhookEvent": "jira:issue_comment_created",
   "issue": {
-    "id": "651204",
-    "key": "OP-8402",
+    "id": "651497",
+    "key": "OP-8885",
     "fields": {
-      "summary": "Retorno do especialista humano sobre regulação e auditoria",
-      "description": "Lead OP-8402. Todos os dados comerciais para a proposta já foram confirmados nos comentários anteriores (forecast: 2026-11-01, probabilidade: Alta, follow-up: 2026-10-25, prioridade: Padrão, faturamento: Acme Corp, prazo: 30dd, boleto, validade: 15 dias, 50 licenças)."
+      "summary": "[TESTE Agente IA] Novo Lead do Site - Anydesk",
+      "description": "Use os campos atuais de OP-8885 e a resposta humana abaixo. O snapshot contém Loonar, 1 licença de Anydesk, prioridade 1- Padrão, faturamento F5 Software LTDA, prazo de 05 dias corridos e depósito bancário; não contém forecast, probabilidade, próximo follow-up, validade ou informações da proposta. Responda à dúvida comercial com base na orientação humana e peça somente os dados ainda ausentes. Não afirme que a proposta está completa nem a gere neste cenário."
     }
   },
   "comment": {

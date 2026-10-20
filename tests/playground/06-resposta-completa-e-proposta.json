@@ -1,15 +1,15 @@
 {
   "webhookEvent": "jira:issue_comment_created",
   "issue": {
-    "id": "651204",
-    "key": "OP-8402",
+    "id": "651497",
+    "key": "OP-8885",
     "fields": {
-      "summary": "Teste Playground: dados completos para proposta",
-      "description": "No sandbox, reavalie o lead e todos os comentários. A resposta recebida fornece estes dados para a proposta: forecast 2026-11-30; probabilidade 70%; próximo follow-up 2026-10-20; prioridade Alta; faturamento Mensal; pagamento em 30 dias por transferência bancária; validade até 2026-11-30; informações da proposta: 3 licenças do software Solução QA Example para Empresa Exemplo QA. Gere uma única proposta apenas se os nove campos obrigatórios estiverem confirmados, o software e o fabricante forem inequívocos no Jira Assets e a atualização do fabricante estiver confirmada. Depois da confirmação de sucesso de generate_new_proposal, informe o lead/contato comercial em comentário público cordial e em tom comercial (não ao operador Jira); o Jira pode enviar o comentário por e-mail, então não inclua detalhes internos, cabeçalho automático ou assinatura. Não afirme que um PDF foi criado sem evidência do Jira."
+      "summary": "[TESTE Agente IA] Novo Lead do Site - Anydesk",
+      "description": "Cenário de teste em sandbox para OP-8885. Releia os campos atuais: empresa Loonar, 1 licença, faturamento F5 Software LTDA, prazo 05 dias corridos, pagamento por depósito bancário e prioridade 1- Padrão. O comentário novo abaixo confirma os campos que faltavam e especifica o produto Anydesk Advanced Conexão Adicional. Confirme no Assets que esse nome continua retornando uma única correspondência e confirme a atualização do fabricante antes de gerar uma única proposta. Só então comunique o lead em comentário público cordial; não afirme que um PDF foi criado sem evidência do Jira."
     },
     "comment": {
       "id": "900002",
-      "body": "Confirmo os dados para a proposta: forecast 2026-11-30; probabilidade 70%; próximo follow-up em 2026-10-20; prioridade Alta; faturamento mensal; pagamento em 30 dias por transferência bancária; validade até 2026-11-30; incluir 3 licenças do software Solução QA Example para Empresa Exemplo QA.",
+      "body": "Confirmo os dados para a proposta: forecast 2026-11-30; probabilidade 70%; próximo follow-up em 2026-10-20; validade até 2026-11-30; incluir 1 licença de Anydesk Advanced Conexão Adicional para a empresa Loonar. A prioridade, o faturamento F5 Software LTDA, o prazo de 05 dias corridos e o depósito bancário permanecem conforme registrados no Jira.",
       "author": {
         "accountId": "qa-requester",
         "displayName": "Solicitante QA"

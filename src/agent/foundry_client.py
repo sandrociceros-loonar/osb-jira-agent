@@ -54,13 +54,13 @@ class FoundryClientManager:
             )
         return self._client
 
-    def get_openai_client(self) -> OpenAI:
+    def get_openai_client(self, max_retries: int = 5) -> OpenAI:
         """Retorna um cliente para o provedor de modelo configurado."""
         if self.settings.model_provider == "foundry-local":
             return self._get_local_openai_client()
         if self.settings.model_provider == "ollama":
             return self._get_ollama_openai_client()
-        return self.get_client().get_openai_client()
+        return self.get_client().get_openai_client(max_retries=max_retries)
 
     def _get_ollama_openai_client(self) -> OpenAI:
         """Conecta ao endpoint OpenAI-compatible local do Ollama."""

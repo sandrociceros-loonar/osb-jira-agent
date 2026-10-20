@@ -2,15 +2,17 @@
 
 from urllib.parse import urlparse
 
+from azure.core.exceptions import ResourceNotFoundError
 from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
 
 from src.config import get_settings
 
 JIRA_RUNTIME_SECRET_NAMES = {
-    "jira_api_token": "jira-api-token",
-    "jira_assets_access_token": "jira-assets-access-token",
+    "jira_api_token": ("jira-api-token", True),
+    "jira_assets_access_token": ("jira-assets-access-token", False),
 }
+CONFLUENCE_API_TOKEN_SECRET_NAME = "confluence-api-token"
 
 
 def configure_jira_runtime_secrets() -> None:
@@ -34,9 +36,13 @@ def configure_jira_runtime_secrets() -> None:
         )
         try:
             secrets = {
-                setting_name: _get_required_secret(client, secret_name)
-                for setting_name, secret_name in JIRA_RUNTIME_SECRET_NAMES.items()
+                setting_name: _get_runtime_secret(client, secret_name, required)
+                for setting_name, (secret_name, required) in JIRA_RUNTIME_SECRET_NAMES.items()
             }
+            confluence_api_token = _get_optional_secret(
+                client,
+                CONFLUENCE_API_TOKEN_SECRET_NAME,
+            )
         finally:
             client.close()
     finally:
@@ -44,6 +50,7 @@ def configure_jira_runtime_secrets() -> None:
 
     settings.jira_api_token = secrets["jira_api_token"]
     settings.jira_assets_access_token = secrets["jira_assets_access_token"]
+    settings.confluence_api_token = confluence_api_token or settings.confluence_api_token
 
 
 def _get_required_secret(client: SecretClient, secret_name: str) -> str:
@@ -51,3 +58,17 @@ def _get_required_secret(client: SecretClient, secret_name: str) -> str:
     if not secret.value:
         raise ValueError(f"Azure Key Vault secret '{secret_name}' is empty or unavailable.")
     return secret.value
+
+
+def _get_runtime_secret(client: SecretClient, secret_name: str, required: bool) -> str:
+    if required:
+        return _get_required_secret(client, secret_name)
+    return _get_optional_secret(client, secret_name)
+
+
+def _get_optional_secret(client: SecretClient, secret_name: str) -> str:
+    try:
+        secret = client.get_secret(secret_name)
+    except ResourceNotFoundError:
+        return ""
+    return secret.value or ""

@@ -1,8 +1,19 @@
 """Pydantic schemas for Jira Webhook payloads."""
 
-from typing import Any
+from typing import Annotated, Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, model_validator
+
+
+def _normalize_jira_identifier(value: Any) -> Any:
+    """Normalize numeric Jira IDs to strings while preserving invalid values for validation."""
+    if isinstance(value, int) and not isinstance(value, bool):
+        return str(value)
+    return value
+
+
+JiraIdentifier = Annotated[str, BeforeValidator(_normalize_jira_identifier)]
+OptionalJiraIdentifier = Annotated[str | None, BeforeValidator(_normalize_jira_identifier)]
 
 
 class JiraUser(BaseModel):
@@ -16,31 +27,31 @@ class JiraUser(BaseModel):
 class JiraPriority(BaseModel):
     """Prioridade de uma issue."""
 
-    id: str | None = None
+    id: OptionalJiraIdentifier = None
     name: str | None = None
 
 
 class JiraStatus(BaseModel):
     """Status atual da issue."""
 
-    id: str | None = None
+    id: OptionalJiraIdentifier = None
     name: str | None = None
 
 
 class JiraIssueType(BaseModel):
     """Tipo do chamado no Jira."""
 
-    id: str | None = None
+    id: OptionalJiraIdentifier = None
     name: str | None = None
 
 
 class JiraComment(BaseModel):
     """Comentário opcional incluído nos eventos de comentário do Jira."""
 
-    id: str | None = None
+    id: OptionalJiraIdentifier = None
     body: Any | None = None
     author: JiraUser | None = None
-    created: str | None = None
+    created: OptionalJiraIdentifier = None
     update_author: JiraUser | None = Field(default=None, alias="updateAuthor")
 
     def get_body_text(self) -> str:
@@ -93,7 +104,7 @@ class JiraFields(BaseModel):
 class JiraIssue(BaseModel):
     """Objeto da issue incluído no webhook."""
 
-    id: str
+    id: JiraIdentifier
     key: str
     fields: JiraFields
 
@@ -101,11 +112,44 @@ class JiraIssue(BaseModel):
 class JiraWebhookPayload(BaseModel):
     """Payload de webhook enviado pelo Jira Service Management."""
 
-    webhook_event: str = Field(alias="webhookEvent")
+    webhook_event: str | None = Field(default=None, alias="webhookEvent")
     timestamp: int | None = None
     issue: JiraIssue
     changelog: dict[str, Any] | None = None
     comment: JiraComment | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _wrap_direct_issue_payload(cls, value: Any) -> Any:
+        """Aceita tanto o envelope de webhook ({'issue': {...}}) quanto o JSON direto da issue Jira ({'id', 'key', 'fields'})."""
+        if (
+            isinstance(value, dict)
+            and "issue" not in value
+            and "key" in value
+            and "fields" in value
+        ):
+            issue_id = value.get("id") or value.get("key")
+            fields = value.get("fields")
+            comment = value.get("comment")
+            if comment is None and isinstance(fields, dict):
+                comment_block = fields.get("comment")
+                if isinstance(comment_block, dict):
+                    comments_list = comment_block.get("comments")
+                    if isinstance(comments_list, list) and comments_list:
+                        comment = comments_list[-1]
+            wrapped: dict[str, Any] = {
+                "webhookEvent": value.get("webhookEvent"),
+                "timestamp": value.get("timestamp"),
+                "issue": {
+                    "id": issue_id,
+                    "key": value["key"],
+                    "fields": fields,
+                },
+            }
+            if comment is not None:
+                wrapped["comment"] = comment
+            return wrapped
+        return value
 
     @property
     def issue_key(self) -> str:

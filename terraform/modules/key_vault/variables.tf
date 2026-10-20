@@ -34,6 +34,19 @@ variable "jira_assets_access_token" {
   default     = ""
 }
 
+variable "confluence_api_token" {
+  description = "Token opcional de API Confluence"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "confluence_webhook_secret" {
+  description = "Segredo do webhook Confluence"
+  type        = string
+  sensitive   = true
+}
+
 variable "tags" {
   description = "Tags para governança de recursos"
   type        = map(string)

@@ -1,10 +1,10 @@
 {
   "webhookEvent": "jira:issue_updated",
   "issue": {
-    "id": "651204",
-    "key": "OP-8402",
+    "id": "651497",
+    "key": "OP-8885",
     "fields": {
-      "summary": "Teste Playground: adicionar nota interna",
+      "summary": "[TESTE Agente IA] Novo Lead do Site - Anydesk",
       "description": "No sandbox, adicione uma nota interna (não pública) à issue com este texto exato: 'QA: validar os dados comerciais após confirmação do solicitante.' Não publique essa nota como comentário visível ao solicitante e confirme somente após o Jira retornar sucesso."
     }
   }

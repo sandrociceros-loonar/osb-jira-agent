@@ -1,11 +1,31 @@
-{
-  "webhookEvent": "jira:issue_created",
-  "issue": {
-    "id": "651204",
-    "key": "OP-8402",
-    "fields": {
-      "summary": "Teste Playground: receber e avaliar lead OP-8402",
-      "description": "Cenário somente leitura: avalie este registro comercial recém-recebido. Consulte no Jira o tipo real, a etapa atual, a descrição completa e os comentários; identifique quais dados existem e quais ainda faltam para avaliar o lead. Não publique comentários, não altere campos nem execute transições. Não invente valores."
+  {
+    "webhookEvent": "jira:issue_created",
+    "issue": {
+      "id": "651497",
+      "key": "OP-8885",
+      "fields": {
+        "summary": "[TESTE Agente IA] Novo Lead do Site - Anydesk",
+        "description": "Cenário offline e somente leitura: avalie apenas o snapshot recebido neste webhook, sem consultar o Jira. Resuma os valores de campos que vieram preenchidos e diferencie campos nulos ou ausentes; deixe claro que comentários, histórico e estado atual do Jira não estão disponíveis neste payload. Não invente valores, não escreva nem execute transições.",
+        "project": {"key": "OP", "name": "Vendas"},
+        "issuetype": {"name": "Oportunidade"},
+        "status": {"name": "Open Lead"},
+        "priority": {"name": "1- Padrão"},
+        "customfield_10115": "Loonar",
+        "customfield_10119": "Anydesk",
+        "customfield_10120": null,
+        "customfield_10143": {"id": "11102", "value": "Site"},
+        "customfield_10100": {"id": "11060", "value": "F5 Software LTDA"},
+        "customfield_10131": {"id": "34213", "value": "05 dias corridos"},
+        "customfield_10132": {"id": "11089", "value": "Depósito Bancário"},
+        "customfield_10468": 1,
+        "customfield_10081": null,
+        "customfield_10221": null,
+        "customfield_10142": null,
+        "customfield_10141": null,
+        "customfield_10140": null,
+        "customfield_10139": null,
+        "customfield_10144": null,
+        "attachment": []
+      }
     }
   }
-}

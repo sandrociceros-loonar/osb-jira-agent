@@ -1,0 +1,199 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1680" height="1120" viewBox="0 0 1680 1120" role="img" aria-labelledby="title description">
+  <title id="title">Arquitetura do agente comercial OSB Software para Jira</title>
+  <desc id="description">Diagrama dos canais Jira, Azure Function e Foundry Hosted Agent, processamento central do agente OSB, integrações com Microsoft Foundry, Jira Assets e Confluence, segurança e infraestrutura.</desc>
+  <defs>
+    <linearGradient id="page" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F5F8FD"/>
+      <stop offset="1" stop-color="#EAF1FB"/>
+    </linearGradient>
+    <linearGradient id="core" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#123B78"/>
+      <stop offset="1" stop-color="#102A43"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#193B66" flood-opacity=".12"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0 0 10 5 0 10Z" fill="#2473C8"/>
+    </marker>
+    <marker id="arrowTeal" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M0 0 10 5 0 10Z" fill="#11998E"/>
+    </marker>
+    <style>
+      text { font-family: Inter, "Segoe UI", Arial, sans-serif; }
+      .eyebrow { font-size: 14px; font-weight: 700; letter-spacing: 1.7px; fill: #61758E; }
+      .heading { font-size: 22px; font-weight: 700; fill: #17324F; }
+      .body { font-size: 16px; fill: #425B76; }
+      .small { font-size: 14px; fill: #60758D; }
+      .card { fill: #FFFFFF; stroke: #D8E3F0; stroke-width: 1.5; }
+      .connector { fill: none; stroke: #2473C8; stroke-width: 3; marker-end: url(#arrow); }
+      .sync { fill: none; stroke: #11998E; stroke-width: 3; stroke-dasharray: 9 8; marker-end: url(#arrowTeal); }
+    </style>
+  </defs>
+
+  <rect width="1680" height="1120" fill="url(#page)"/>
+  <path d="M0 0h1680v142H0z" fill="#FFFFFF"/>
+  <path d="M0 141.5h1680" stroke="#DCE6F2"/>
+  <text x="58" y="57" class="eyebrow">OSB SOFTWARE  /  CRM COMERCIAL</text>
+  <text x="58" y="102" font-size="34" font-weight="750" fill="#123B78">Arquitetura da solução</text>
+  <text x="1620" y="64" text-anchor="end" font-size="16" font-weight="650" fill="#526B86">JIRA  ·  MICROSOFT FOUNDRY  ·  CONFLUENCE</text>
+  <text x="1620" y="96" text-anchor="end" class="small">Visão funcional do escopo implementado</text>
+
+  <text x="58" y="183" class="eyebrow">CANAIS E EVENTOS</text>
+  <text x="465" y="183" class="eyebrow">ORQUESTRAÇÃO OSB SOFTWARE</text>
+  <text x="1225" y="183" class="eyebrow">MODELO E SISTEMAS CONECTADOS</text>
+
+  <!-- Input: Jira CRM -->
+  <g filter="url(#shadow)">
+    <rect x="50" y="210" width="355" height="158" rx="18" class="card"/>
+  </g>
+  <g transform="translate(75 235) scale(1.45)">
+    <path fill="#0052CC" d="M11.571 11.513H0a5.218 5.218 0 0 0 5.232 5.215h2.13v2.057A5.215 5.215 0 0 0 12.575 24V12.518a1.005 1.005 0 0 0-1.005-1.005zm5.723-5.756H5.736a5.215 5.215 0 0 0 5.215 5.214h2.129v2.058a5.218 5.218 0 0 0 5.215 5.214V6.758a1.001 1.001 0 0 0-1.001-1.001zM23.013 0H11.455a5.215 5.215 0 0 0 5.215 5.215h2.129v2.057A5.215 5.215 0 0 0 24 12.483V1.005a1.001 1.001 0 0 0-.987-1.005z"/>
+  </g>
+  <text x="125" y="256" class="heading">Jira CRM · projeto OP</text>
+  <text x="76" y="303" class="body">Leads, oportunidades e propostas</text>
+  <text x="76" y="332" class="small">issue_created · issue_updated · comment_created</text>
+  <text x="76" y="352" class="small">Comentários do próprio agente são ignorados</text>
+
+  <!-- Input: Azure Function -->
+  <g filter="url(#shadow)">
+    <rect x="50" y="405" width="355" height="190" rx="18" class="card"/>
+  </g>
+  <g transform="translate(76 431)">
+    <rect width="19" height="19" rx="3" fill="#F25022"/>
+    <rect x="23" width="19" height="19" rx="3" fill="#7FBA00"/>
+    <rect y="23" width="19" height="19" rx="3" fill="#00A4EF"/>
+    <rect x="23" y="23" width="19" height="19" rx="3" fill="#FFB900"/>
+  </g>
+  <text x="133" y="452" class="heading">Azure Function · Python</text>
+  <text x="76" y="494" class="body">Entrada principal dos webhooks Jira</text>
+  <text x="76" y="523" class="small">/jira-webhook · valida segredo compartilhado</text>
+  <text x="76" y="550" class="small">/confluence-webhook · atualiza cache RAG</text>
+  <text x="76" y="577" class="small">/kb-refresh · sincronização manual</text>
+
+  <!-- Input: Hosted Agent -->
+  <g filter="url(#shadow)">
+    <rect x="50" y="632" width="355" height="163" rx="18" class="card"/>
+  </g>
+  <g transform="translate(77 659)" fill="none" stroke="#6D5CE8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M8 19 18 4l10 15-10 15z"/>
+    <path d="M18 4v30M8 19h20"/>
+    <path d="m34 4 2 5 5 2-5 2-2 5-2-5-5-2 5-2z" fill="#6D5CE8" stroke="none"/>
+  </g>
+  <text x="135" y="680" class="heading">Foundry Hosted Agent</text>
+  <text x="76" y="721" class="body">Protocolo Invocations · resposta SSE</text>
+  <text x="76" y="750" class="small">Acesso autenticado pelo Microsoft Entra</text>
+  <text x="76" y="777" class="small">Usa o mesmo processamento compartilhado</text>
+
+  <!-- Central OSB agent -->
+  <g filter="url(#shadow)">
+    <rect x="465" y="210" width="670" height="618" rx="26" fill="url(#core)"/>
+  </g>
+  <rect x="630" y="233" width="340" height="127" rx="18" fill="#FFFFFF"/>
+  <g transform="translate(650 244) scale(2.34)">
+    <path d="M125.925 16.5659C128.533 18.1825 129.811 20.7329 129.983 23.7431C130.283 28.9928 126.474 33.3699 121.123 33.4901L88.0741 33.4886V0.0878906L120.47 0.0979628C125.58 0.23034 129.374 4.13978 129.313 9.20463C129.375 12.0292 128.422 14.6587 125.926 16.5659H125.925ZM122.855 8.30534C122.645 7.48589 122.026 6.99092 121.154 7.00962H94.9664V13.3601L121.324 13.3616C123.319 13.2709 123.199 9.64565 122.855 8.30605V8.30534ZM121.988 20.2833H94.9649V26.5734H122.15C124.113 26.2309 124.398 20.2804 121.989 20.2833H121.988Z" fill="#17479E"/>
+    <path d="M76.2043 33.4504L46.4932 33.4921C46.2908 30.6762 47.4378 28.0071 50.3742 27.2042C51.6544 26.8545 52.9534 26.674 54.3488 26.6675L77.0453 26.5704C78.3817 26.5646 79.0837 23.1235 78.0555 20.5976C77.7934 19.9544 77.2332 19.6565 76.5506 19.6587L59.9759 19.7249C57.2002 19.7357 54.5785 19.8155 51.8517 19.6422C49.8298 19.5141 48.1831 18.5601 46.9799 17.0126C43.5359 12.5823 44.1588 5.47134 48.8023 1.82522C50.331 0.625913 52.1642 0.00575552 54.1875 0.00503608L83.206 0C83.3795 2.80006 82.4118 5.55767 79.6345 6.34258C78.5581 6.64691 77.4384 6.82173 76.2705 6.82677L52.5134 6.92533C51.9482 6.92749 51.46 7.48074 51.3182 7.97787C50.9661 9.21099 50.5945 12.8751 52.6776 12.8708L75.7082 12.8204C78.242 12.8147 80.454 13.9535 82.0985 15.7421C85.7614 19.7242 85.7355 26.7099 82.0633 30.5978C80.5821 32.1654 78.5725 33.4475 76.2035 33.4504H76.2043Z" fill="#17479E"/>
+    <path d="M31.5897 33.4887H10.1274C4.7818 33.1671 0.252735 29.049 0 23.582V10.0349C0.221053 4.5449 4.82501 0.346247 10.216 0.0922852H31.2635C36.7452 0.300203 41.4377 4.61684 41.5551 10.1903V23.4273C41.4543 26.022 40.495 28.3515 38.6915 30.1663C36.7913 32.1261 34.4231 33.2182 31.5904 33.4894L31.5897 33.4887ZM31.8417 26.6195C33.4928 26.6195 34.6859 25.4123 34.6873 23.9022L34.7024 9.86156C34.7046 8.1457 33.4949 6.94351 31.72 6.94423L9.77818 6.94999C8.16024 6.94999 6.89585 8.11692 6.89657 9.69034L6.90161 23.9237C6.90161 25.4597 8.15376 26.6202 9.73498 26.6202H31.8417V26.6195Z" fill="#17479E"/>
+    <path d="M75.4338 47.2672C75.5325 46.7449 75.5721 46.3758 75.6851 45.9312L77.4312 39.0534C77.8208 38.9555 78.2477 38.9505 78.679 39.0253L76.0826 48.7478C75.8111 48.9413 75.2826 48.9528 74.8513 48.8543L72.365 40.5678L69.9831 48.7902C69.6605 48.9154 69.1673 48.9356 68.7583 48.873L66.1381 39.0152C66.573 38.9764 66.9697 38.9713 67.3765 39.0037L69.1068 45.8125C69.227 46.2866 69.2688 46.7175 69.3667 47.2924L69.5727 46.4578L71.6853 39.1181C71.968 38.88 72.6595 38.8879 73.0202 39.08L75.2336 46.4542L75.4338 47.2672Z" fill="#17479E"/>
+    <path d="M22.5654 49.0664C20.5126 49.0462 18.8752 47.9865 18.3193 46.0656C17.9233 44.6979 17.9233 43.2008 18.302 41.831C18.8414 39.8791 20.4996 38.8331 22.4761 38.7813C24.5167 38.728 26.2938 39.7518 26.9037 41.7583C27.3335 43.1742 27.3357 44.7318 26.8835 46.1397C26.2722 48.0433 24.6111 49.0858 22.5661 49.0657L22.5654 49.0664ZM22.7289 48.0347C24.2107 47.9995 25.3217 47.2369 25.7134 45.8728C26.067 44.6418 26.0663 43.2727 25.73 42.0382C25.3325 40.582 24.1164 39.8259 22.6468 39.8281C21.1909 39.8302 19.9603 40.5511 19.5362 41.9914C19.1776 43.2087 19.174 44.5692 19.5103 45.7944C19.9135 47.262 21.1455 48.0721 22.7296 48.034L22.7289 48.0347Z" fill="#17479E"/>
+    <path d="M109.949 48.9091L107.552 44.7889L105.486 44.7831L105.46 48.8084C105.197 48.9566 104.552 48.948 104.292 48.7854L104.295 38.9708C105.669 38.9369 106.988 38.9103 108.287 39.0513C109.85 39.2211 110.753 40.4751 110.634 41.978C110.539 43.1651 109.85 44.0284 108.634 44.427L111.301 48.8724L109.948 48.9091H109.949ZM109.421 41.7133C109.346 39.5442 106.837 40.0255 105.473 39.9751L105.476 43.7572C106.341 43.7817 107.181 43.786 108.006 43.6687C108.954 43.5335 109.455 42.7126 109.421 41.7133H109.421Z" fill="#17479E"/>
+    <path d="M92.928 45.7604L88.9051 45.7583L87.735 48.8022C87.4369 48.931 86.9308 48.926 86.5347 48.8325L90.3884 39.0826C90.4842 38.8553 91.2618 38.8718 91.4793 39.0214L95.3387 48.8555L94.1369 48.913L92.928 45.7619V45.7604ZM92.5291 44.6849L90.9212 40.3488L89.3746 44.6806L92.5284 44.6849H92.5291Z" fill="#17479E"/>
+    <path d="M125.704 44.1763L121.751 44.2375L121.719 47.8447L126.103 47.8915L126.037 48.9203L120.549 48.9073V38.9568L126.038 38.9424L126.116 39.9705L121.734 39.9849L121.747 43.1713L125.687 43.2029C125.885 43.2043 125.927 44.1727 125.704 44.1763Z" fill="#17479E"/>
+    <path d="M6.8325 48.8151C5.48818 49.2093 3.94297 49.1259 2.67569 48.6784C2.4388 48.564 2.44384 47.774 2.56481 47.5733C4.03225 48.0172 7.38693 48.6424 7.57198 46.5193C7.63823 45.7589 7.22708 45.1524 6.49984 44.8366L4.09706 43.7941C3.04291 43.3365 2.57417 42.2667 2.59721 41.2466C2.62241 40.1365 3.38853 39.2364 4.57948 38.9523C5.83164 38.653 7.15868 38.8292 8.40579 39.3105C8.40075 39.6185 8.24234 40.1134 8.10049 40.3034C6.7893 39.8401 4.08554 39.3516 3.81192 41.0753C3.69095 41.8379 4.03009 42.5689 4.79478 42.889L6.99595 43.8114C8.13793 44.2898 8.79389 45.1754 8.76005 46.3531C8.72909 47.433 8.10553 48.4417 6.83178 48.8151H6.8325Z" fill="#17479E"/>
+    <path d="M42.2204 43.6262C42.5221 43.6277 42.5142 44.6306 42.2449 44.6335L38.3084 44.6817L38.2847 48.8012C38.0326 48.9631 37.3644 48.9559 37.116 48.7782L37.1175 38.9571L42.6568 38.9463L42.6697 39.9686L38.2947 39.9924L38.2983 43.609L42.2197 43.627L42.2204 43.6262Z" fill="#17479E"/>
+    <path d="M54.9658 48.8537L53.7943 48.8962L53.79 39.9967L50.6506 39.9679L50.6852 38.9478L58.088 38.9506L58.0599 39.9751L54.9651 39.983L54.9658 48.8537Z" fill="#17479E"/>
+  </g>
+  <text x="800" y="397" text-anchor="middle" font-size="30" font-weight="750" fill="#FFFFFF">Agente Comercial CRM</text>
+  <text x="800" y="425" text-anchor="middle" font-size="16" fill="#C7D9F0">Processamento compartilhado · regras comerciais OSB</text>
+  <rect x="500" y="454" width="600" height="94" rx="14" fill="#FFFFFF" fill-opacity=".10" stroke="#84A7D2" stroke-opacity=".45"/>
+  <circle cx="527" cy="481" r="7" fill="#5CC8B8"/>
+  <text x="547" y="486" font-size="17" font-weight="700" fill="#FFFFFF">Valida e filtra eventos</text>
+  <text x="524" y="516" font-size="14" fill="#CFDDF0">Payload Jira · escopo aceito · proteção contra loop do agente</text>
+  <rect x="500" y="565" width="600" height="94" rx="14" fill="#FFFFFF" fill-opacity=".10" stroke="#84A7D2" stroke-opacity=".45"/>
+  <circle cx="527" cy="592" r="7" fill="#5CC8B8"/>
+  <text x="547" y="597" font-size="17" font-weight="700" fill="#FFFFFF">Raciocina e coordena ferramentas</text>
+  <text x="524" y="627" font-size="14" fill="#CFDDF0">Responses API · function calling serializado · limite configurável (padrão 16)</text>
+  <rect x="500" y="676" width="600" height="119" rx="14" fill="#FFFFFF" fill-opacity=".10" stroke="#84A7D2" stroke-opacity=".45"/>
+  <circle cx="527" cy="703" r="7" fill="#5CC8B8"/>
+  <text x="547" y="708" font-size="17" font-weight="700" fill="#FFFFFF">Executa ações comerciais tipadas</text>
+  <text x="524" y="738" font-size="14" fill="#CFDDF0">Cliente do projeto · validação de argumentos · escrita por configuração</text>
+  <text x="524" y="766" font-size="14" fill="#CFDDF0">Sem conector Jira nativo do Foundry · sem fila ou processamento em lote</text>
+
+  <!-- Output: Microsoft Foundry -->
+  <g filter="url(#shadow)">
+    <rect x="1225" y="210" width="405" height="164" rx="18" class="card"/>
+  </g>
+  <g transform="translate(1252 237)" fill="none" stroke="#6D5CE8" stroke-width="3" stroke-linecap="round">
+    <path d="M3 20h34a9 9 0 0 0 1-18 13 13 0 0 0-24 3A8 8 0 0 0 3 20z"/>
+    <path d="m20 6 2 5 5 2-5 2-2 5-2-5-5-2 5-2z" fill="#6D5CE8" stroke="none"/>
+  </g>
+  <text x="1308" y="259" class="heading">Microsoft Foundry</text>
+  <text x="1252" y="304" class="body">Responses API · deployment configurado</text>
+  <text x="1252" y="333" class="small">Modelo Azure; Foundry Local/Ollama no dev</text>
+  <text x="1252" y="357" class="small">Retorna decisão ou chamadas de função</text>
+
+  <!-- Output: Jira and Assets -->
+  <g filter="url(#shadow)">
+    <rect x="1225" y="411" width="405" height="207" rx="18" class="card"/>
+  </g>
+  <g transform="translate(1253 437) scale(.95)">
+    <path fill="#0052CC" d="M11.571 11.513H0a5.218 5.218 0 0 0 5.232 5.215h2.13v2.057A5.215 5.215 0 0 0 12.575 24V12.518a1.005 1.005 0 0 0-1.005-1.005zm5.723-5.756H5.736a5.215 5.215 0 0 0 5.215 5.214h2.129v2.058a5.218 5.218 0 0 0 5.215 5.214V6.758a1.001 1.001 0 0 0-1.001-1.001zM23.013 0H11.455a5.215 5.215 0 0 0 5.215 5.215h2.129v2.057A5.215 5.215 0 0 0 24 12.483V1.005a1.001 1.001 0 0 0-.987-1.005z"/>
+  </g>
+  <text x="1290" y="459" class="heading">Jira REST API + Assets</text>
+  <text x="1252" y="502" class="body">CRM: leitura, comentários e transições</text>
+  <text x="1252" y="531" class="small">Produtos e fabricantes via pesquisa AQL</text>
+  <text x="1252" y="560" class="small">Anexos · itens de proposta · compras e preços</text>
+  <text x="1252" y="589" class="small">Escritas dependem de JIRA_ENABLE_WRITE_OPERATIONS</text>
+
+  <!-- Output: Confluence knowledge base -->
+  <g filter="url(#shadow)">
+    <rect x="1225" y="655" width="405" height="187" rx="18" class="card"/>
+  </g>
+  <g transform="translate(1252 681) scale(1.25)">
+    <path fill="#172B4D" d="M.87 18.257c-.248.382-.53.875-.763 1.245a.764.764 0 0 0 .255 1.04l4.965 3.054a.764.764 0 0 0 1.058-.26c.199-.332.454-.763.733-1.221 1.967-3.247 3.945-2.853 7.508-1.146l4.957 2.337a.764.764 0 0 0 1.028-.382l2.364-5.346a.764.764 0 0 0-.382-1 599.851 599.851 0 0 0-4.965-2.361C10.911 10.97 5.224 11.185.87 18.257zM23.131 5.743c.249-.405.531-.875.764-1.25a.764.764 0 0 0-.256-1.034L18.675.404a.764.764 0 0 0-1.058.26c-.195.335-.451.763-.734 1.225-1.966 3.246-3.945 2.85-7.508 1.146L4.437.694a.764.764 0 0 0-1.027.382L1.046 6.422a.764.764 0 0 0 .382 1c1.039.49 3.105 1.467 4.965 2.361 6.698 3.246 12.392 3.029 16.738-4.04z"/>
+  </g>
+  <text x="1305" y="703" class="heading">Confluence · KB</text>
+  <text x="1252" y="747" class="body">RAG com cache BM25 em português</text>
+  <text x="1252" y="776" class="small">Consulta de dúvidas no lead ou comentário</text>
+  <text x="1252" y="805" class="small">Resposta encontrada ou escalação humana</text>
+  <text x="1252" y="830" class="small">Webhook republica o cache integralmente</text>
+
+  <!-- Main routes -->
+  <path d="M227 368v34" class="connector"/>
+  <path d="M405 500h54" class="connector"/>
+  <path d="M405 714h34v-54h20" class="connector"/>
+  <path d="M1137 300h80" class="connector"/>
+  <path d="M1225 348h-70v80h-20" class="connector"/>
+  <path d="M1137 597h80" class="connector"/>
+  <path d="M1225 568h-70v56h-18" class="connector"/>
+  <path d="M1137 760h80" class="connector"/>
+  <path d="M1225 805h-88" class="connector"/>
+  <path d="M1427 844v38h-1008v-384h-14" class="sync"/>
+  <rect x="666" y="861" width="524" height="35" rx="17" fill="#E2F5F2"/>
+  <text x="928" y="884" text-anchor="middle" font-size="14" font-weight="650" fill="#087E74">Publicação Confluence → Function → recarga integral do cache</text>
+
+  <!-- Shared security and infrastructure -->
+  <rect x="50" y="923" width="1580" height="139" rx="20" fill="#FFFFFF" stroke="#D8E3F0" stroke-width="1.5"/>
+  <text x="78" y="960" class="eyebrow">SEGURANÇA E INFRAESTRUTURA TRANSVERSAL</text>
+  <path d="M585 978v60M1090 978v60" stroke="#D8E3F0"/>
+  <g transform="translate(80 981)" fill="none" stroke="#17479E" stroke-width="2.5" stroke-linejoin="round">
+    <path d="M20 1 37 8v13c0 11-7 18-17 23C10 39 3 32 3 21V8z"/>
+    <path d="m12 22 6 6 12-14"/>
+  </g>
+  <text x="133" y="1000" font-size="17" font-weight="700" fill="#17324F">Azure Key Vault + Managed Identity</text>
+  <text x="133" y="1028" class="small">Segredos Jira/Confluence/Assets; sem credenciais no código</text>
+  <g transform="translate(622 982)">
+    <rect width="17" height="17" rx="2" fill="#F25022"/>
+    <rect x="21" width="17" height="17" rx="2" fill="#7FBA00"/>
+    <rect y="21" width="17" height="17" rx="2" fill="#00A4EF"/>
+    <rect x="21" y="21" width="17" height="17" rx="2" fill="#FFB900"/>
+  </g>
+  <text x="676" y="1000" font-size="17" font-weight="700" fill="#17324F">Limites de confiança separados</text>
+  <text x="676" y="1028" class="small">Segredo nos webhooks Jira/Confluence · Entra no Hosted Agent</text>
+  <g transform="translate(1128 985) scale(1.45)">
+    <path fill="#844FBA" d="M1.44 0v7.575l6.561 3.79V3.787zm21.12 4.227l-6.561 3.791v7.574l6.56-3.787zM8.72 4.23v7.575l6.561 3.787V8.018zm0 8.405v7.575L15.28 24v-7.578z"/>
+  </g>
+  <text x="1175" y="1000" font-size="17" font-weight="700" fill="#17324F">Terraform</text>
+  <text x="1175" y="1028" class="small">Infraestrutura como código · Function e Key Vault</text>
+  <text x="78" y="1087" font-size="13" fill="#60758D">Linha azul: execução comercial  ·  Linha tracejada verde: sincronização da base de conhecimento  ·  Fluxos síncronos; sem fila durável</text>
+</svg>

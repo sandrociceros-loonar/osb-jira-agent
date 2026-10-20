@@ -13,7 +13,8 @@ services:
     language: python
     kind: hosted
     name: osb-jira-agent
-    description: Hosted Jira commercial workflow agent using the Foundry Invocations protocol.
+    description: Hosted Jira commercial workflow agent using the Foundry Invocations
+      protocol.
     codeConfiguration:
       runtime: python_3_13
       entryPoint: src/hosted_agent/main.py
@@ -58,13 +59,23 @@ services:
         value: ${JIRA_ASSETS_PRODUCT_OBJECT_TYPE_ID}
       - name: JIRA_MANUFACTURER_FIELD_ID
         value: ${JIRA_MANUFACTURER_FIELD_ID}
+      - name: JIRA_SKIP_MANUFACTURER_UPDATE_IF_NOT_EDITABLE
+        value: ${JIRA_SKIP_MANUFACTURER_UPDATE_IF_NOT_EDITABLE}
       - name: JIRA_AGENT_ACCOUNT_ID
-        value: ${JIRA_AGENT_ACCOUNT_ID}
+        value: ""
       - name: JIRA_ATTACHMENT_MAX_BYTES
         value: ${JIRA_ATTACHMENT_MAX_BYTES}
+      - name: CONFLUENCE_SPACE_URL
+        value: https://loonar-osb.atlassian.net/wiki/spaces/osbjiraage
+      - name: CONFLUENCE_BASE_URL
+        value: https://loonar-osb.atlassian.net/wiki
+      - name: CONFLUENCE_SPACE_KEY
+        value: osbjiraage
+      - name: CONFLUENCE_API_EMAIL
+        value: ${JIRA_API_EMAIL}
       - name: LOG_LEVEL
         value: ${LOG_LEVEL}
     container:
       resources:
         cpu: "0.5"
-        memory: 1Gi
+        memory: 1.0Gi

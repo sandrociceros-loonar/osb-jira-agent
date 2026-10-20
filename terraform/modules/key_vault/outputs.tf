@@ -27,3 +27,13 @@ output "secret_jira_assets_access_token_name" {
   description = "Nome do segredo do token Jira Assets no Key Vault"
   value       = var.jira_assets_access_token == "" ? "" : azurerm_key_vault_secret.jira_assets_access_token[0].name
 }
+
+output "secret_confluence_api_token_name" {
+  description = "Nome do segredo do token de API Confluence no Key Vault"
+  value       = var.confluence_api_token == "" ? "" : azurerm_key_vault_secret.confluence_api_token[0].name
+}
+
+output "secret_confluence_webhook_name" {
+  description = "Nome do segredo do webhook Confluence no Key Vault"
+  value       = azurerm_key_vault_secret.confluence_webhook_secret.name
+}

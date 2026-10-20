@@ -12,6 +12,11 @@ from src.kb.models import KBChunkMatch, KBSearchResult
 from src.models.jira_webhook import JiraWebhookPayload
 
 
+def test_request_details_field_defaults_when_configuration_is_blank():
+    settings = Settings(JIRA_REQUEST_DETAILS_FIELD_ID="")
+    assert settings.jira_request_details_field_id == "customfield_10120"
+
+
 def test_request_details_extracted_from_webhook_payload():
     payload_data = {
         "webhookEvent": "jira:issue_created",
@@ -20,7 +25,7 @@ def test_request_details_extracted_from_webhook_payload():
             "key": "OP-9901",
             "fields": {
                 "summary": "Novo lead recebido",
-                "customfield_10010": {
+                "customfield_10120": {
                     "type": "doc",
                     "version": 1,
                     "content": [
@@ -41,7 +46,7 @@ def test_request_details_extracted_from_webhook_payload():
 
     payload = JiraWebhookPayload.model_validate(payload_data)
     # Com field_id configurado
-    extracted = payload.issue.fields.get_request_details_text("customfield_10010")
+    extracted = payload.issue.fields.get_request_details_text("customfield_10120")
     assert extracted == "Gostaria de saber se vocês oferecem suporte 24/7 e SLA de atendimento."
 
     # Com descoberta por chave ou nome
@@ -57,7 +62,9 @@ def test_request_details_extracted_from_webhook_payload():
         },
     }
     payload2 = JiraWebhookPayload.model_validate(payload_data2)
-    assert payload2.issue.fields.get_request_details_text() == "Temos desconto para pagamento anual?"
+    assert (
+        payload2.issue.fields.get_request_details_text() == "Temos desconto para pagamento anual?"
+    )
 
 
 def test_format_triage_user_prompt_includes_request_details():
@@ -76,11 +83,11 @@ def test_jira_connector_get_lead_details_extracts_request_details():
         "key": "OP-9901",
         "names": {
             "summary": "Summary",
-            "customfield_10010": "Detalhes da Solicitação",
+            "customfield_10120": "Detalhes da Solicitação",
         },
         "fields": {
             "summary": "Lead de Teste",
-            "customfield_10010": "Qual a validade das propostas enviadas?",
+            "customfield_10120": "Qual a validade das propostas enviadas?",
         },
     }
 
@@ -96,7 +103,7 @@ def test_jira_connector_get_lead_details_extracts_request_details():
         JIRA_INSTANCE_URL="https://test.atlassian.net",
         JIRA_API_EMAIL="test@example.com",
         JIRA_API_TOKEN="token",
-        JIRA_REQUEST_DETAILS_FIELD_ID="customfield_10010",
+        JIRA_REQUEST_DETAILS_FIELD_ID="customfield_10120",
         JIRA_ALLOWED_PROJECT_KEYS=["OP"],
         JIRA_LEAD_PROJECT_KEY="OP",
     )
@@ -133,11 +140,14 @@ def test_jira_connector_query_knowledge_base():
         JIRA_ALLOWED_PROJECT_KEYS=["OP"],
     )
 
-    with JiraConnector(settings, transport=httpx.MockTransport(lambda r: httpx.Response(200)), rag_engine=mock_rag) as connector:
+    with JiraConnector(
+        settings, transport=httpx.MockTransport(lambda r: httpx.Response(200)), rag_engine=mock_rag
+    ) as connector:
         res = connector.execute_tool("query_knowledge_base", {"query": "suporte 24/7"})
         assert res["found"] is True
         assert res["confidence_score"] == 0.88
         assert res["matches"][0]["title"] == "SLA e Suporte Enterprise"
+        assert "same_domain_links" in res["matches"][0]
         mock_rag.search.assert_called_once_with("suporte 24/7")
 
 
@@ -185,11 +195,24 @@ def test_jira_connector_escalate_to_human_group():
         put_payload = json.loads(put_requests[0].content)
         assert put_payload["fields"]["assignee"]["accountId"] == "human-group-account-id"
 
-        # Verifica se houve chamada POST de comentário público informando o lead cordialmente como humano e pedindo dados
-        comment_posts = [r for r in requests if r.method == "POST" and r.url.path.endswith("/comment")]
-        assert len(comment_posts) >= 1
-        public_comment_body = json.loads(comment_posts[-1].content)["body"]
+        # Verifica se houve chamada POST da transição Mensagem para o Cliente (ID 36 / customfield_15195) informando o lead cordialmente como humano e pedindo dados
+        transition_posts = [
+            r for r in requests if r.method == "POST" and r.url.path.endswith("/transitions")
+        ]
+        assert len(transition_posts) >= 1
+        customer_msg_payload = json.loads(transition_posts[-1].content)
+        assert customer_msg_payload["transition"]["id"] == "36"
+        public_comment_body = customer_msg_payload["fields"]["customfield_15195"]
         assert "logo mais entrarei em contato" in public_comment_body
         assert "forma de pagamento e prazo de faturamento" in public_comment_body
         assert "inteligência artificial" not in public_comment_body.lower()
         assert "agente de ia" not in public_comment_body.lower()
+
+
+def test_triage_prompt_includes_non_repetition_and_lead_work_rules():
+    from src.agent.prompts import TRIAGE_SYSTEM_PROMPT
+
+    assert "REGRA DE NÃO REPETIÇÃO" in TRIAGE_SYSTEM_PROMPT
+    assert "start_lead_work" in TRIAGE_SYSTEM_PROMPT
+    assert "respostas breves do lead" in TRIAGE_SYSTEM_PROMPT
+    assert "não consulte a base de conhecimento novamente" in TRIAGE_SYSTEM_PROMPT.lower()

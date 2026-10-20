@@ -18,7 +18,14 @@
       "command": "${workspaceFolder}/.venv/bin/python -Xfrozen_modules=off -m debugpy --listen 127.0.0.1:5679 -m agentdev run src/hosted_agent/main.py --verbose --port 8088",
       "isBackground": true,
       "options": {
-        "cwd": "${workspaceFolder}"
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "OTEL_EXPORTER_OTLP_ENDPOINT": "http://localhost:4318",
+          "OTEL_EXPORTER_OTLP_PROTOCOL": "http/protobuf",
+          "AZURE_TRACING_GEN_AI_CONTENT_RECORDING_ENABLED": "false",
+          "OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT": "false",
+          "TRACELOOP_TRACE_CONTENT": "false"
+        }
       },
       "dependsOn": [
         "Validate prerequisites"

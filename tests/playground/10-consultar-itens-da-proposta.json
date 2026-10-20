@@ -1,11 +1,11 @@
 {
   "webhookEvent": "jira:issue_updated",
   "issue": {
-    "id": "651204",
-    "key": "OP-8402",
+    "id": "651497",
+    "key": "OP-8885",
     "fields": {
-      "summary": "Teste Playground: consultar itens da proposta",
-      "description": "Localize os itens filhos de proposta associados a OP-8402 e relate suas chaves, etapas e valores relevantes que o Jira retornar. Não altere itens, preços ou status."
+      "summary": "[TESTE Agente IA] Novo Lead do Site - Anydesk",
+      "description": "Consulte os itens filhos de OP-8885 e relate somente o que o Jira retornar. A consulta de referência não encontrou itens; se continuar vazia, informe que ainda não há itens de proposta vinculados. Não crie nem altere itens, preços ou status."
     }
   }
 }

@@ -1,11 +1,11 @@
 {
   "webhookEvent": "jira:issue_updated",
   "issue": {
-    "id": "651204",
-    "key": "OP-8402",
+    "id": "651497",
+    "key": "OP-8885",
     "fields": {
-      "summary": "Teste Playground: encaminhar item para Compras",
-      "description": "No sandbox, encaminhe o item de proposta relacionado a OP-8402 para Compras somente após identificar o item e obter do Jira Assets um produto inequívoco. Use exclusivamente dados confirmados: quantidade 3, classificação da cotação conforme opção válida no Jira, período de 12 meses e tipo de preço conforme opção válida no Jira. Confira os valores atuais e a transição aplicável. Se produto, classificação, período, tipo de preço ou transição não puder ser confirmado, não execute a escrita e pergunte o que falta."
+      "summary": "[TESTE Agente IA] Novo Lead do Site - Anydesk",
+      "description": "No sandbox, primeiro localize em OP-8885 um item de proposta existente. A consulta de referência não encontrou itens; se continuar vazia, não encaminhe nada para Compras e explique que falta um item. Não use a quantidade do lead como quantidade de item, nem invente classificação, período ou tipo de preço."
     }
   }
 }

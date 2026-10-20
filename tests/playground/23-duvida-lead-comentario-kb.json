@@ -1,10 +1,10 @@
 {
   "webhookEvent": "jira:issue_comment_created",
   "issue": {
-    "id": "651204",
-    "key": "OP-8402",
+    "id": "651497",
+    "key": "OP-8885",
     "fields": {
-      "summary": "Lead em andamento: dúvida sobre formas de faturamento",
+      "summary": "[TESTE Agente IA] Novo Lead do Site - Anydesk",
       "description": "Lead em negociação comercial para fornecimento de software."
     }
   },

@@ -47,3 +47,20 @@ resource "azurerm_key_vault_secret" "jira_assets_access_token" {
 
   depends_on = [azurerm_role_assignment.deployer_secrets_officer]
 }
+
+resource "azurerm_key_vault_secret" "confluence_api_token" {
+  count        = var.confluence_api_token == "" ? 0 : 1
+  name         = "confluence-api-token"
+  value        = var.confluence_api_token
+  key_vault_id = azurerm_key_vault.kv.id
+
+  depends_on = [azurerm_role_assignment.deployer_secrets_officer]
+}
+
+resource "azurerm_key_vault_secret" "confluence_webhook_secret" {
+  name         = "confluence-webhook-secret"
+  value        = var.confluence_webhook_secret
+  key_vault_id = azurerm_key_vault.kv.id
+
+  depends_on = [azurerm_role_assignment.deployer_secrets_officer]
+}

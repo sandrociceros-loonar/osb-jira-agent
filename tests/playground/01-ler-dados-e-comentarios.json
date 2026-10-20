@@ -1,11 +1,11 @@
 {
   "webhookEvent": "jira:issue_updated",
   "issue": {
-    "id": "651204",
-    "key": "OP-8402",
+    "id": "651497",
+    "key": "OP-8885",
     "fields": {
-      "summary": "Teste Playground: revisar dados e comentários do lead",
-      "description": "Leia os campos atuais e todos os comentários de OP-8402. Faça um resumo dos dados comerciais fornecidos, das respostas já recebidas e das informações que continuam pendentes. Não altere a issue."
+      "summary": "[TESTE Agente IA] Novo Lead do Site - Anydesk",
+      "description": "Leia os campos atuais e os comentários de OP-8885. Use como referência o registro de teste do lead Anydesk: empresa Loonar, 1 licença, origem Site; faturamento F5 Software LTDA, pagamento em 05 dias corridos por depósito bancário. Confirme o estado atual no Jira; no snapshot de referência não havia detalhes da solicitação, fabricante, forecast, probabilidade, próximo follow-up, validade ou informações da proposta, comentários, nem anexos. Resuma o que o Jira realmente retornar e não altere a issue."
     }
   }
 }

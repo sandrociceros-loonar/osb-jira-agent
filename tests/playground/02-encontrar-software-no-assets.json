@@ -1,11 +1,11 @@
 {
   "webhookEvent": "jira:issue_updated",
   "issue": {
-    "id": "651204",
-    "key": "OP-8402",
+    "id": "651497",
+    "key": "OP-8885",
     "fields": {
-      "summary": "Teste Playground: localizar software no Assets",
-      "description": "Leia os campos e comentários do lead, identifique o nome do software explicitamente informado pelo solicitante e pesquise esse software no Jira Assets. Informe os dados e o fabricante apenas se vierem de um resultado inequívoco do Assets. Não use o nome do software como fabricante e não altere a issue."
+      "summary": "[TESTE Agente IA] Novo Lead do Site - Anydesk",
+      "description": "O campo Produto (Raiz) de OP-8885 indica Anydesk. Pesquise esse nome no Jira Assets e relate os resultados sem escolher um produto: a consulta de referência retornou 15 resultados e hasMoreResults=true. Não trate a lista parcial como correspondência única, não atualize a issue e peça a edição exata do produto se for necessária para avançar."
     }
   }
 }

@@ -21,6 +21,10 @@ class JiraConnectorError(Exception):
     """Raised when Jira configuration or an API operation is invalid."""
 
 
+class JiraManufacturerFieldNotEditableError(JiraConnectorError):
+    """Raised when the manufacturer field exists but Jira does not expose it as editable."""
+
+
 class JiraConnector:
     """Calls the allowlisted Jira operations represented by the collection manifests."""
 
@@ -35,7 +39,8 @@ class JiraConnector:
     ASSETS_API_ROOT = "https://api.atlassian.com/ex/jira"
     LEAD_DETAILS_FIELDS = (
         "assignee,description,summary,customfield_10115,customfield_10117,"
-        "customfield_10116,customfield_10119,customfield_10468,customfield_10125"
+        "customfield_10116,customfield_10118,customfield_10119,customfield_10120,"
+        "customfield_10468,customfield_10125,customfield_10391"
     )
     COMMENT_PAGE_SIZE = 100
     MAX_LEAD_COMMENTS = 1000
@@ -88,6 +93,10 @@ class JiraConnector:
         self.lead_issue_type_id = settings.jira_lead_issue_type_id
         self.transition_ids = settings.jira_transition_ids
         self.allow_write_operations = settings.jira_allow_write_operations
+        self.skip_manufacturer_update_if_not_editable = (
+            settings.jira_skip_manufacturer_update_if_not_editable
+        )
+        self.manufacturer_update_pending = False
         self.assets_access_token = settings.jira_assets_access_token
         self._assets_bearer_auth = bool(self.assets_access_token)
         self.assets_cloud_id = settings.jira_assets_cloud_id
@@ -97,6 +106,8 @@ class JiraConnector:
         self.agent_account_id = settings.jira_agent_account_id
         self.attachment_max_bytes = settings.jira_attachment_max_bytes
         self.request_details_field_id = settings.jira_request_details_field_id
+        self.customer_message_transition_id = settings.jira_customer_message_transition_id.strip()
+        self.customer_message_field_id = settings.jira_customer_message_field_id.strip()
         self.kb_human_escalation_team = settings.kb_human_escalation_team
         self.kb_human_escalation_group_account_id = settings.kb_human_escalation_group_account_id
         self.kb_human_escalation_transition_id = settings.kb_human_escalation_transition_id
@@ -132,6 +143,7 @@ class JiraConnector:
         )
         self._assets_client: httpx.Client | None = None
         self._assets_product_attribute_names: dict[str, str] | None = None
+        self._issue_type_metadata_cache: dict[tuple[str, str], dict[str, object]] = {}
         self._authenticated_account_id: str | None = None
 
     def close(self) -> None:
@@ -271,8 +283,12 @@ class JiraConnector:
         company: str | None = None,
         contact_name: str | None = None,
         email: str | None = None,
+        phone: str | None = None,
         license_count: int | None = None,
         product_root: str | None = None,
+        request_details: str | None = None,
+        domain: str | None = None,
+        job_title: str | None = None,
         lead_source: str | None = None,
     ) -> dict[str, object]:
         self._require_write_enabled()
@@ -281,17 +297,170 @@ class JiraConnector:
             "issuetype": {"id": self.lead_issue_type_id},
             "project": {"key": self.lead_project_key},
         }
-        custom_fields: tuple[tuple[str, object | None], ...] = (
-            ("customfield_10115", company),
-            ("customfield_10116", contact_name),
-            ("customfield_10117", email),
-            ("customfield_10468", license_count),
-            ("customfield_10119", product_root),
-            ("customfield_10143", {"value": lead_source} if lead_source else None),
+        metadata = self.get_project_issue_type_metadata(
+            self.lead_project_key,
+            self.lead_issue_type_id,
         )
-        fields.update({field: value for field, value in custom_fields if value is not None})
+        field_values: tuple[tuple[str, object | None, str], ...] = (
+            ("Empresa", company, "string"),
+            ("Nome do contato", contact_name, "string"),
+            ("Email", email, "string"),
+            ("Telefone", phone, "string"),
+            ("Quantidade de licenças", license_count, "number"),
+            ("Produto (Raiz)", product_root, "string"),
+            ("Detalhes da Solicitação", request_details, "string"),
+            ("Domain", domain, "string"),
+            ("Cargo", job_title, "string"),
+            ("Origem do Lead", lead_source, "option"),
+        )
+        metadata_fields = metadata.get("fields")
+        if not isinstance(metadata_fields, list):
+            raise JiraConnectorError("Jira returned invalid issue type field metadata.")
+        for field_name, value, expected_type in field_values:
+            if value is None:
+                continue
+            field_metadata = self._resolve_issue_type_field(metadata_fields, field_name)
+            schema = field_metadata.get("schema")
+            if not isinstance(schema, dict) or schema.get("type") != expected_type:
+                raise JiraConnectorError(
+                    f"Jira field '{field_name}' has an unexpected metadata type."
+                )
+            operations = field_metadata.get("operations")
+            if not isinstance(operations, list) or "set" not in operations:
+                raise JiraConnectorError(f"Jira field '{field_name}' cannot be set on create.")
+            field_id = field_metadata.get("id")
+            if not isinstance(field_id, str) or not field_id:
+                raise JiraConnectorError(f"Jira field '{field_name}' has no valid field ID.")
+            if expected_type == "option":
+                self._validate_metadata_option(field_metadata, field_name, str(value))
+                fields[field_id] = {"value": value}
+            else:
+                fields[field_id] = value
         response = self._request("POST", "/rest/api/3/issue", json={"fields": fields})
         return self._json(response)
+
+    def get_project_issue_type_metadata(
+        self,
+        project_key: str,
+        issue_type_id: str,
+    ) -> dict[str, object]:
+        """Return creation metadata for an allowed Jira project and issue type."""
+        normalized_project_key = project_key.upper()
+        if normalized_project_key not in self.allowed_projects:
+            raise JiraConnectorError(
+                f"Project '{normalized_project_key}' is not included in JIRA_ALLOWED_PROJECT_KEYS."
+            )
+        if not re.fullmatch(r"\d+", issue_type_id):
+            raise JiraConnectorError("Jira issue type ID must contain only digits.")
+
+        cache_key = (normalized_project_key, issue_type_id)
+        if cache_key not in self._issue_type_metadata_cache:
+            response = self._request(
+                "GET",
+                f"/rest/api/3/issue/createmeta/{quote(normalized_project_key, safe='')}"
+                f"/issuetypes/{quote(issue_type_id, safe='')}",
+                params={"expand": "fields"},
+            )
+            data = self._json(response)
+            raw_fields = data.get("fields")
+            if not isinstance(raw_fields, list):
+                raise JiraConnectorError("Jira returned invalid issue type field metadata.")
+
+            fields: list[dict[str, object]] = []
+            for item in raw_fields:
+                if not isinstance(item, dict):
+                    raise JiraConnectorError("Jira returned invalid issue type field metadata.")
+                field_id = item.get("fieldId") or item.get("key")
+                name = item.get("name")
+                schema = item.get("schema", {})
+                operations = item.get("operations", [])
+                required = item.get("required")
+                has_default_value = item.get("hasDefaultValue")
+                raw_allowed_values = item.get("allowedValues", [])
+                if (
+                    not isinstance(field_id, str)
+                    or not field_id
+                    or not isinstance(name, str)
+                    or not isinstance(schema, dict)
+                    or not isinstance(operations, list)
+                    or not all(isinstance(operation, str) for operation in operations)
+                    or not isinstance(required, bool)
+                    or not isinstance(has_default_value, bool)
+                    or not isinstance(raw_allowed_values, list)
+                ):
+                    raise JiraConnectorError("Jira returned invalid issue type field metadata.")
+
+                allowed_values: list[dict[str, object]] = []
+                for option in raw_allowed_values:
+                    if not isinstance(option, dict):
+                        continue
+                    sanitized_option = {
+                        key: option[key]
+                        for key in ("id", "value", "name", "key")
+                        if isinstance(option.get(key), (str, int, float, bool))
+                    }
+                    if sanitized_option:
+                        allowed_values.append(sanitized_option)
+
+                fields.append(
+                    {
+                        "id": field_id,
+                        "name": name,
+                        "required": required,
+                        "schema": schema,
+                        "operations": operations,
+                        "has_default_value": has_default_value,
+                        "allowed_values": allowed_values,
+                    }
+                )
+
+            self._issue_type_metadata_cache[cache_key] = {
+                "project_key": normalized_project_key,
+                "issue_type_id": issue_type_id,
+                "fields": fields,
+            }
+
+        return self._issue_type_metadata_cache[cache_key]
+
+    def _resolve_issue_type_field(
+        self,
+        fields: list[object],
+        field_name: str,
+    ) -> dict[str, object]:
+        normalized_name = self._normalize_field_name(field_name)
+        matches = [
+            item
+            for item in fields
+            if isinstance(item, dict)
+            and isinstance(item.get("name"), str)
+            and self._normalize_field_name(item["name"]) == normalized_name
+        ]
+        if len(matches) != 1:
+            raise JiraConnectorError(
+                f"Expected exactly one Jira create field named '{field_name}', "
+                f"found {len(matches)}."
+            )
+        return matches[0]
+
+    @staticmethod
+    def _validate_metadata_option(
+        field_metadata: dict[str, object],
+        field_name: str,
+        value: str,
+    ) -> None:
+        allowed_values = field_metadata.get("allowed_values")
+        if not isinstance(allowed_values, list) or not allowed_values:
+            return
+        normalized_value = JiraConnector._normalize_field_name(value)
+        available_values = {
+            JiraConnector._normalize_field_name(option["value"])
+            for option in allowed_values
+            if isinstance(option, dict) and isinstance(option.get("value"), str)
+        }
+        if normalized_value not in available_values:
+            raise JiraConnectorError(
+                f"Value for Jira field '{field_name}' is not one of its allowed options."
+            )
 
     def get_issue_fields(self, issue_key: str) -> dict[str, object]:
         key = self._encoded_issue_key(issue_key)
@@ -563,6 +732,38 @@ class JiraConnector:
             body = body[len(self.AGENT_COMMENT_PREFIX) :].lstrip(" \r\n:-—")
         if not body:
             raise JiraConnectorError("A public Jira comment must contain message text.")
+
+        if self.customer_message_transition_id and self.customer_message_field_id:
+            try:
+                response = self._request(
+                    "POST",
+                    f"/rest/api/2/issue/{key}/transitions",
+                    json={
+                        "transition": {"id": self.customer_message_transition_id},
+                        "fields": {self.customer_message_field_id: body},
+                    },
+                )
+                if response.content:
+                    result = self._json(response)
+                    result["public"] = True
+                    result["transition_id"] = self.customer_message_transition_id
+                    return result
+                return {
+                    "issue_key": issue_key,
+                    "added": True,
+                    "public": True,
+                    "transition_id": self.customer_message_transition_id,
+                    "field_id": self.customer_message_field_id,
+                }
+            except JiraConnectorError as exc:
+                logger.warning(
+                    "Transição '%s' (Mensagem para o Cliente) indisponível para %s (%s); "
+                    "usando fallback de comentário padrão.",
+                    self.customer_message_transition_id,
+                    issue_key,
+                    exc,
+                )
+
         response = self._request(
             "POST",
             f"/rest/api/2/issue/{key}/comment",
@@ -802,13 +1003,31 @@ class JiraConnector:
                 "Manufacturer updates are restricted to the configured lead issue type."
             )
 
-        field_id = self._find_manufacturer_field_id(names, editable_fields)
+        try:
+            field_id = self._find_manufacturer_field_id(names, editable_fields)
+        except JiraManufacturerFieldNotEditableError as exc:
+            if not self.skip_manufacturer_update_if_not_editable:
+                raise
+            self.manufacturer_update_pending = True
+            logger.warning(
+                "Fabricante pendente para %s: o campo Jira não está editável; "
+                "geração de proposta bloqueada.",
+                issue_key,
+            )
+            return {
+                "issue_key": issue_key,
+                "field_id": self.manufacturer_field_id or None,
+                "manufacturer": manufacturer_name,
+                "updated": False,
+                "pending": True,
+                "reason": str(exc),
+            }
         field_metadata = editable_fields.get(field_id)
         if not isinstance(field_metadata, dict):
-            raise JiraConnectorError("Jira manufacturer field metadata is invalid.")
+            field_metadata = {"schema": {"type": "string"}}
         schema = field_metadata.get("schema", {})
         if not isinstance(schema, dict):
-            raise JiraConnectorError("Jira manufacturer field schema is invalid.")
+            schema = {"type": "string"}
 
         custom_type = str(schema.get("custom", "")).casefold()
         item_type = str(schema.get("items", "")).casefold()
@@ -946,10 +1165,21 @@ class JiraConnector:
                     "url": m.url,
                     "content": m.content,
                     "score": round(m.score, 3),
+                    "same_domain_links": m.same_domain_links,
                 }
                 for m in result.matches
             ],
         }
+
+    def read_knowledge_base_link(self, url: str) -> dict[str, object]:
+        """Lê o conteúdo de um link da base de conhecimento, restrito estritamente ao mesmo domínio."""
+        rag_engine = self._rag_engine
+        if rag_engine is None:
+            from src.kb import get_rag_engine
+
+            rag_engine = get_rag_engine(self._settings)
+
+        return rag_engine.read_link(url)
 
     def escalate_to_human_group(
         self,
@@ -979,9 +1209,8 @@ class JiraConnector:
                 )
 
         # 2. Atribuição à equipe ou usuário humano (se configurado)
-        target_account_id = (
-            self.kb_human_escalation_group_account_id
-            or self.team_account_ids.get(self.kb_human_escalation_team)
+        target_account_id = self.kb_human_escalation_group_account_id or self.team_account_ids.get(
+            self.kb_human_escalation_team
         )
         if target_account_id:
             try:
@@ -1101,27 +1330,55 @@ class JiraConnector:
         names: dict[str, object],
         editable_fields: dict[str, object],
     ) -> str:
-        if self.manufacturer_field_id:
-            if self.manufacturer_field_id not in editable_fields:
-                raise JiraConnectorError(
-                    "Configured JIRA_MANUFACTURER_FIELD_ID is not editable on this issue."
-                )
-            return self.manufacturer_field_id
-
         accepted_names = {"fabricante", "manufacturer", "software manufacturer"}
-        candidates = [
+        named_candidates = [
             field_id
             for field_id, field_name in names.items()
             if isinstance(field_name, str)
             and self._normalize_field_name(field_name) in accepted_names
-            and field_id in editable_fields
         ]
-        if len(candidates) != 1:
+        if self.manufacturer_field_id:
+            if self.manufacturer_field_id in editable_fields:
+                return self.manufacturer_field_id
+            if self.manufacturer_field_id in names:
+                raise JiraManufacturerFieldNotEditableError(
+                    "Configured JIRA_MANUFACTURER_FIELD_ID "
+                    f"'{self.manufacturer_field_id}' is not editable on this issue. "
+                    "Add the field to the Jira lead edit screen and grant the integration "
+                    "account permission to edit it."
+                )
             raise JiraConnectorError(
-                "Expected exactly one editable Jira field named Fabricante/Manufacturer; "
-                f"found {len(candidates)}. Configure JIRA_MANUFACTURER_FIELD_ID if needed."
+                "Configured JIRA_MANUFACTURER_FIELD_ID is not available on this issue."
             )
-        return candidates[0]
+
+        candidates = [field_id for field_id in named_candidates if field_id in editable_fields]
+        if len(candidates) == 1:
+            return candidates[0]
+        if len(named_candidates) == 1 and not candidates:
+            field_id = named_candidates[0]
+            raise JiraManufacturerFieldNotEditableError(
+                f"Jira field '{names[field_id]}' ({field_id}) exists but is not editable "
+                "on this issue. Add the field to the Jira lead edit screen and grant the "
+                "integration account permission to edit it."
+            )
+        if named_candidates and not candidates:
+            raise JiraManufacturerFieldNotEditableError(
+                "Multiple Jira fields named Fabricante/Manufacturer exist, but none is "
+                "editable on this issue. Add the intended field to the Jira lead edit screen "
+                "and grant the integration account permission to edit it."
+            )
+
+        if len(candidates) > 1:
+            raise JiraConnectorError(
+                "Expected exactly one editable Jira field named "
+                "Fabricante/Manufacturer; found multiple. Configure "
+                "JIRA_MANUFACTURER_FIELD_ID to select the intended field."
+            )
+
+        raise JiraConnectorError(
+            "Expected exactly one Jira field named Fabricante/Manufacturer; "
+            f"found {len(candidates)}. Configure JIRA_MANUFACTURER_FIELD_ID if needed."
+        )
 
     @staticmethod
     def _normalize_field_name(value: str) -> str:

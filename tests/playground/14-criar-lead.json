@@ -1,11 +1,11 @@
 {
   "webhookEvent": "jira:issue_updated",
   "issue": {
-    "id": "651204",
-    "key": "OP-8402",
+    "id": "651497",
+    "key": "OP-8885",
     "fields": {
-      "summary": "Teste Playground: criar novo lead QA",
-      "description": "No sandbox, crie um novo lead de teste com estes dados explícitos: resumo 'Lead QA Playground - Produto Exemplo'; empresa 'Empresa Exemplo QA'; contato 'Contato QA'; e-mail 'qa@example.com'; 3 licenças; produto 'Produto de teste'. Use somente os dados informados, não duplique a solicitação e confirme a criação somente se o Jira retornar sucesso."
+      "summary": "[TESTE Agente IA] Novo Lead do Site - Anydesk",
+      "description": "Escrita somente em sandbox: crie um lead QA separado de OP-8885 com os dados explícitos de teste: resumo 'Lead QA Playground - Produto Exemplo'; empresa 'Empresa Exemplo QA'; contato 'Contato QA'; e-mail 'qa@example.com'; 3 licenças; produto 'Produto de teste'. Não altere nem duplique OP-8885 e confirme a criação somente se o Jira retornar sucesso."
     }
   }
 }

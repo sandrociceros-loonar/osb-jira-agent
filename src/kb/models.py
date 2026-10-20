@@ -15,6 +15,7 @@ class KBPage(BaseModel):
     space_key: str
     version: int = 1
     text: str = ""
+    same_domain_links: list[dict[str, Any]] = Field(default_factory=list)
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
@@ -27,6 +28,7 @@ class KBChunk(BaseModel):
     page_url: str
     content: str
     chunk_index: int = 0
+    same_domain_links: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class KBChunkMatch(BaseModel):
@@ -37,6 +39,7 @@ class KBChunkMatch(BaseModel):
     url: str
     content: str
     score: float
+    same_domain_links: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class KBSearchResult(BaseModel):
