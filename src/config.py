@@ -1,9 +1,10 @@
 """Application Configuration using Pydantic Settings."""
 
+from datetime import datetime
 from typing import Literal
 from urllib.parse import urlparse
 
-from pydantic import AliasChoices, Field, field_validator
+from pydantic import AliasChoices, Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -16,6 +17,34 @@ class Settings(BaseSettings):
         if value is None or not str(value).strip():
             return "customfield_10120"
         return str(value).strip()
+
+    @field_validator("jira_debug_log_content_until", mode="before")
+    @classmethod
+    def empty_debug_expiry_is_none(cls, value: object) -> object:
+        if value is None or not str(value).strip():
+            return None
+        return value
+
+    @field_validator("jira_debug_log_content_until")
+    @classmethod
+    def debug_expiry_requires_timezone(cls, value: datetime | None) -> datetime | None:
+        if value is not None and value.tzinfo is None:
+            raise ValueError("JIRA_DEBUG_LOG_CONTENT_UNTIL deve incluir fuso horário.")
+        return value
+
+    @model_validator(mode="after")
+    def validate_debug_content_configuration(self) -> "Settings":
+        if self.jira_debug_log_content:
+            if not self.jira_debug_log_content_issue_key.strip():
+                raise ValueError(
+                    "JIRA_DEBUG_LOG_CONTENT requer uma issue ou '*' em "
+                    "JIRA_DEBUG_LOG_CONTENT_ISSUE_KEY."
+                )
+            if self.jira_debug_log_content_until is None:
+                raise ValueError("JIRA_DEBUG_LOG_CONTENT requer JIRA_DEBUG_LOG_CONTENT_UNTIL.")
+            if self.log_level.upper() != "DEBUG":
+                raise ValueError("JIRA_DEBUG_LOG_CONTENT requer LOG_LEVEL=DEBUG.")
+        return self
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -204,7 +233,7 @@ class Settings(BaseSettings):
         alias="JIRA_SKIP_MANUFACTURER_UPDATE_IF_NOT_EDITABLE",
         description=(
             "Permite continuar o webhook com atualização de fabricante pendente quando "
-            "o campo existe, mas não está editável; a geração de proposta continua bloqueada"
+            "o campo existe, mas não está editável; a proposta não depende dessa atualização"
         ),
     )
     jira_agent_account_id: str = Field(
@@ -320,6 +349,21 @@ class Settings(BaseSettings):
     # Runtime
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
     environment: str = Field(default="development", alias="ENVIRONMENT")
+    jira_debug_log_content: bool = Field(
+        default=False,
+        alias="JIRA_DEBUG_LOG_CONTENT",
+        description="Permite logs temporários de conteúdo completo quando todos os filtros são atendidos",
+    )
+    jira_debug_log_content_issue_key: str = Field(
+        default="",
+        alias="JIRA_DEBUG_LOG_CONTENT_ISSUE_KEY",
+        description="Única issue Jira autorizada a aparecer nos logs de conteúdo completo",
+    )
+    jira_debug_log_content_until: datetime | None = Field(
+        default=None,
+        alias="JIRA_DEBUG_LOG_CONTENT_UNTIL",
+        description=("Expiração ISO-8601 com fuso horário para os logs temporários de conteúdo"),
+    )
 
 
 _settings: Settings | None = None

@@ -183,36 +183,48 @@ iniciado durante a instalação.
 
 ---
 
-## 🚀 Como Executar Localmente
+## 🚀 Como Executar Localmente e Automação
 
-### 1. Pré-requisitos
-- Python 3.11, 3.12 ou 3.13
-- [uv](https://docs.astral.sh/uv/) instalado (`curl -LsSf https://astral.sh/uv/install.sh | sh`)
-- [Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local) (`npm i -g azure-functions-core-tools@4`)
-- [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) (`az login`)
-- Para verificar os requisitos locais, use `./scripts/check-local-prereqs.sh`. O script faz o pré-flight
-  e solicita confirmação interativa antes de instalar ou atualizar componentes; use `--check-only`
-  para apenas diagnosticar ou `--update` para incluir atualizações no plano. Ele instala Azurite
-  somente quando `AzureWebJobsStorage` usa `UseDevelopmentStorage=true`.
+O projeto conta com o [`Makefile`](./Makefile) para orquestrar todas as fases do ciclo de vida: preparação de pré-requisitos, inicialização de arquivos de configuração, testes, execução local no Foundry e deploy em produção.
 
-### 2. Instalação das Dependências
+### 1. Preparação Completa e Pré-requisitos (Setup Rápido)
 
-Utilize o `uv` para sincronizar o ambiente virtual isolado:
+Para orquestrar a preparação completa do ambiente de desenvolvimento (arquivos de configuração, verificação de dependências locais e sincronização via `uv`):
 
 ```bash
-make install
-# ou diretamente:
-uv sync --all-extras --group dev
+make setup
+```
+
+O alvo `make setup` executa em cadeia:
+1. `make config`: Cria `.env` e `local.settings.json` a partir dos arquivos `.example` se ainda não existirem.
+2. `make prereqs`: Diagnostica os requisitos de runtime e ferramentas locais (`./scripts/check-local-prereqs.sh --check-only`).
+3. `make install`: Sincroniza o ambiente virtual isolado com `uv sync --all-extras --group dev`.
+
+Caso deseje executar com opção de atualização interativa das ferramentas locais:
+```bash
+make prereqs-update
+```
+
+### 2. Testes e Qualidade de Código
+
+Execute a suíte de testes e validações estáticas via `make`:
+
+```bash
+make test       # Executa os 173 testes unitários com pytest
+make lint       # Valida estilo e tipagem com ruff (src e tests)
+make format     # Aplica correções automáticas de formatação
+make compile    # Valida sintaxe e compila bytecode Python
+make package    # Sincroniza requirements.txt com lockfile e valida o repositório
 ```
 
 ### 3. Configuração de Ambiente
-
-Copie os modelos de configuração e preencha com as credenciais do seu ambiente:
 
 Para entender o papel de cada arquivo de configuração e quando ele é utilizado, consulte
 [SETTINGS.md](./SETTINGS.md).
 
 ```bash
+make config
+# ou manualmente:
 test -f .env || cp .env.example .env
 test -f local.settings.json || cp local.settings.json.example local.settings.json
 ```
@@ -259,6 +271,20 @@ O conector também consulta, em modo somente leitura, os metadados de criação 
 em um projeto permitido (`get_project_issue_type_metadata`). A criação de leads resolve os campos
 comerciais pelo nome e tipo retornados pelo Jira, incluindo contato, telefone e detalhes da solicitação;
 as opções como origem do lead são validadas contra as opções atuais do campo.
+
+### Executar o Hosted Agent Localmente no Microsoft Foundry (Agent Inspector)
+
+Para executar o Hosted Agent localmente e interagir com suas ferramentas e modelos via interface visual do **Agent Inspector**:
+
+```bash
+make run-foundry
+```
+
+O comando inicia o serviço local na porta 8088 e abre o navegador automaticamente com a interface do Agent Inspector. Para iniciar apenas o servidor local sem abrir o navegador:
+
+```bash
+make run-foundry-no-client
+```
 
 ### Usar Foundry Local durante o desenvolvimento
 
@@ -324,6 +350,12 @@ cordial, natural e profissional, pois o Jira pode enviá-lo por e-mail. Isso inc
 esclarecimentos e atualizações de andamento ou conclusão. Não se deve dirigir a mensagem ao operador
 Jira, expor detalhes técnicos internos, nem repetir cabeçalho ou assinatura: o Jira exibe a conta
 autenticada como autora.
+
+Ao encaminhar um item para Compras, o agente deve buscar o produto no Assets e usar o `id`/`objectId`
+numérico retornado na busca como `product_object_id` de `send_item_to_purchasing`. O conector preenche
+o campo Assets Jira `customfield_11828` com uma lista contendo o `workspaceId` configurado,
+`id` no formato `<workspaceId>:<objectId>` e o `objectId`. O agente não deve inventar IDs de campos
+ou pedir manualmente o código do produto que a busca já retornou.
 
 Se o campo Jira do fabricante não tiver o nome `Fabricante`, `Manufacturer` ou
 `Software manufacturer`, configure `JIRA_MANUFACTURER_FIELD_ID` com o ID de um campo
@@ -569,8 +601,11 @@ valores sensíveis e não é versionado. Em um clone novo, **não aplique** sem 
 o state correspondente ou importar os recursos existentes; para uso compartilhado, configure um
 backend remoto Azure Storage antes de operar a infraestrutura. O `terraform apply` provisiona
 recursos e configurações, mas não publica o código Python da Function nem cria uma nova versão do
-Hosted Agent. Publique o código da Function com `func azure functionapp publish` e o Hosted Agent
-com `azd deploy`, conforme [DEPLOYMENT.md](./DEPLOYMENT.md).
+Hosted Agent.
+- Para publicar o Hosted Agent com a esteira completa e validada: `make deploy` (ou diretamente com `make deploy-foundry`).
+- Para publicar a Azure Function: `make deploy-function` (ou `func azure functionapp publish <nome> --build remote`).
+- Para consultar o status da versão ativa: `make status-foundry`.
+Consulte [DEPLOYMENT.md](./DEPLOYMENT.md) para o guia detalhado.
 
 O Terraform configurará automaticamente as atribuições de RBAC:
 - **Key Vault Secrets Officer** para a identidade de implantação escrever os segredos no vault.

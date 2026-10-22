@@ -65,6 +65,12 @@ services:
         value: ""
       - name: JIRA_ATTACHMENT_MAX_BYTES
         value: ${JIRA_ATTACHMENT_MAX_BYTES}
+      - name: JIRA_DEBUG_LOG_CONTENT
+        value: ${JIRA_DEBUG_LOG_CONTENT}
+      - name: JIRA_DEBUG_LOG_CONTENT_ISSUE_KEY
+        value: ${JIRA_DEBUG_LOG_CONTENT_ISSUE_KEY}
+      - name: JIRA_DEBUG_LOG_CONTENT_UNTIL
+        value: ${JIRA_DEBUG_LOG_CONTENT_UNTIL}
       - name: CONFLUENCE_SPACE_URL
         value: https://loonar-osb.atlassian.net/wiki/spaces/osbjiraage
       - name: CONFLUENCE_BASE_URL
@@ -75,6 +81,8 @@ services:
         value: ${JIRA_API_EMAIL}
       - name: LOG_LEVEL
         value: ${LOG_LEVEL}
+      - name: APPLICATIONINSIGHTS_CONNECTION_STRING
+        value: ${APPLICATIONINSIGHTS_CONNECTION_STRING}
     container:
       resources:
         cpu: "0.5"

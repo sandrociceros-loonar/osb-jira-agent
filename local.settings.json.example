@@ -44,6 +44,11 @@
     "KB_HUMAN_ESCALATION_TRANSITION_ID": "",
     "KB_ENABLED": "true",
     "LOG_LEVEL": "INFO",
+    "JIRA_DEBUG_LOG_CONTENT": "false",
+    "JIRA_DEBUG_LOG_CONTENT_ISSUE_KEY": "",
+    "JIRA_DEBUG_LOG_CONTENT_UNTIL": "",
+    "AzureFunctionsJobHost__logging__logLevel__default": "Information",
+    "AzureFunctionsJobHost__logging__logLevel__Function": "Information",
     "ENVIRONMENT": "development"
   }
 }

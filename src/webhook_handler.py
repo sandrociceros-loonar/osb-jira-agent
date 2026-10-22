@@ -3,6 +3,7 @@
 import json
 import threading
 import time
+import uuid
 from collections.abc import Mapping
 
 from opentelemetry import trace
@@ -15,8 +16,10 @@ from src.models.jira_webhook import JiraWebhookPayload
 from src.security.webhook_verifier import WebhookSecurityError, verify_jira_webhook
 from src.utils.logger import (
     format_structured_log,
+    log_debug_content,
     sanitize_webhook_headers,
     setup_logger,
+    transaction_log_context,
 )
 
 logger = setup_logger("jira-webhook-handler")
@@ -111,6 +114,26 @@ def process_jira_webhook(
     headers: Mapping[str, str],
     require_webhook_signature: bool = True,
     wait_timeout_seconds: float | None = None,
+    transaction_id: str | None = None,
+) -> tuple[int, dict[str, object]]:
+    """Correlate all logs from one webhook execution before processing it."""
+    transaction_id = transaction_id or uuid.uuid4().hex
+    with transaction_log_context(transaction_id):
+        return _process_jira_webhook(
+            raw_body,
+            headers,
+            require_webhook_signature,
+            wait_timeout_seconds,
+            transaction_id,
+        )
+
+
+def _process_jira_webhook(
+    raw_body: bytes,
+    headers: Mapping[str, str],
+    require_webhook_signature: bool,
+    wait_timeout_seconds: float | None,
+    transaction_id: str,
 ) -> tuple[int, dict[str, object]]:
     """Authenticate, validate, and process a Jira webhook payload."""
     start_time = time.monotonic()
@@ -128,6 +151,7 @@ def process_jira_webhook(
         record_exception=False,
         set_status_on_exception=False,
     ) as span:
+        span.set_attribute("app.transaction.id", transaction_id)
         span.set_attribute("webhook.source", source)
         span.set_attribute("webhook.body_size_bytes", body_size)
 
@@ -213,19 +237,6 @@ def process_jira_webhook(
         issue_type = issue.fields.issuetype.name if issue.fields.issuetype else None
         issue_status = issue.fields.status.name if issue.fields.status else None
         issue_priority = issue.fields.priority.name if issue.fields.priority else None
-        reporter = issue.fields.reporter.display_name if issue.fields.reporter else None
-        comment_author = (
-            payload.comment.author.display_name
-            if payload.comment and payload.comment.author
-            else None
-        )
-        comment_text = payload.comment.get_body_text() if payload.comment else None
-        comment_preview = (
-            (comment_text[:200] + "...")
-            if comment_text and len(comment_text) > 200
-            else comment_text
-        )
-
         span.set_attribute("webhook.event", payload.webhook_event or "unspecified")
         span.set_attribute("jira.issue.key", payload.issue_key)
         if issue_type:
@@ -243,22 +254,19 @@ def process_jira_webhook(
                 issue_type=issue_type,
                 status=issue_status,
                 priority=issue_priority,
-                summary=issue.fields.summary,
-                reporter=reporter,
                 has_comment=payload.comment is not None,
-                comment_author=comment_author,
-                comment_preview=comment_preview,
                 body_size_bytes=body_size,
                 headers=safe_headers,
             )
         )
-        logger.debug(
-            format_structured_log(
-                "WEBHOOK_RAW_PAYLOAD",
-                source=source,
-                issue_key=payload.issue_key,
-                payload=raw_json,
-            )
+        log_debug_content(
+            logger,
+            issue_key=payload.issue_key,
+            stage="webhook_payload",
+            content=raw_json,
+            enabled=settings.jira_debug_log_content,
+            configured_issue_key=settings.jira_debug_log_content_issue_key,
+            expires_at=settings.jira_debug_log_content_until,
         )
 
         if payload.webhook_event is not None and payload.webhook_event not in ACCEPTED_EVENTS:
@@ -293,7 +301,8 @@ def process_jira_webhook(
 
         def _worker() -> None:
             try:
-                outcome.append(_execute_triage(payload, source, start_time))
+                with transaction_log_context(transaction_id):
+                    outcome.append(_execute_triage(payload, source, start_time))
             finally:
                 done_event.set()
 

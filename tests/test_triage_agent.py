@@ -1,5 +1,7 @@
 """Tests for Triage Agent parsing and logic."""
 
+import logging
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -41,9 +43,10 @@ def test_jira_tool_execution_emits_trace_without_recording_payload():
     }
 
 
-def test_generate_proposal_is_blocked_when_manufacturer_update_is_pending():
+def test_generate_proposal_runs_when_manufacturer_field_update_is_pending():
     connector = MagicMock()
     connector.manufacturer_update_pending = True
+    connector.execute_tool.return_value = {"success": True, "issue_key": "OP-101"}
 
     result = JiraTriageAgent._execute_jira_tool(
         connector,
@@ -51,15 +54,29 @@ def test_generate_proposal_is_blocked_when_manufacturer_update_is_pending():
         {"issue_key": "OP-101"},
     )
 
-    assert result == {
-        "error": (
-            "A proposta não pode ser gerada: a atualização do fabricante está pendente. "
-            "Informe a pendência e solicite a liberação do campo no Jira."
-        ),
-        "success": False,
-        "proposal_blocked": True,
-    }
-    connector.execute_tool.assert_not_called()
+    assert result == {"success": True, "issue_key": "OP-101"}
+    connector.execute_tool.assert_called_once_with(
+        "generate_new_proposal",
+        {"issue_key": "OP-101"},
+    )
+
+
+def test_commercial_prompt_does_not_block_on_manufacturer_field_or_reconfirm_proposal():
+    assert "nunca é pré-requisito" in TRIAGE_SYSTEM_PROMPT
+    assert "continue o fluxo comercial" in TRIAGE_SYSTEM_PROMPT
+    assert "não peça confirmação redundante" in TRIAGE_SYSTEM_PROMPT
+    assert "mesmo quando os campos da issue ainda estiverem vazios ou desatualizados" in (
+        TRIAGE_SYSTEM_PROMPT
+    )
+    assert "não peça novamente uma informação que já foi fornecida" in TRIAGE_SYSTEM_PROMPT
+    assert (
+        "Considere um dado confirmado se foi explicitamente informado pelo lead em qualquer comentário"
+        in (TRIAGE_SYSTEM_PROMPT)
+    )
+    assert "geração de proposta bloqueada" not in TRIAGE_SYSTEM_PROMPT
+    assert "questione o cliente cordialmente na mensagem se deve prosseguir" not in (
+        TRIAGE_SYSTEM_PROMPT
+    )
 
 
 def test_failed_jira_tool_execution_marks_trace_without_recording_exception():
@@ -132,6 +149,22 @@ def test_commercial_prompt_uses_crm_purpose_and_safe_defaults():
     assert "salvo se o usuário pedir explicitamente sua alteração" in TRIAGE_SYSTEM_PROMPT
     assert "registro comercial do Jira" in user_prompt
     assert "Proposta de renovação" in user_prompt
+
+
+def test_purchasing_prompt_maps_assets_product_id_to_jira_assets_field():
+    purchasing_tool = next(tool for tool in JIRA_TOOLS if tool.name == "send_item_to_purchasing")
+    product_id_schema = purchasing_tool.function_schema()["parameters"]["properties"][
+        "product_object_id"
+    ]
+
+    assert "customfield_11828" in TRIAGE_SYSTEM_PROMPT
+    assert "`<workspaceId>:<objectId>`" in TRIAGE_SYSTEM_PROMPT
+    assert "workspaceId:objectId" in purchasing_tool.description
+    assert "customfield_12345" in TRIAGE_SYSTEM_PROMPT
+    assert "objectId numérico do produto" in product_id_schema["description"]
+    assert "id/objectId numérico" in next(
+        tool.description for tool in JIRA_TOOLS if tool.name == "search_assets_products_by_software"
+    )
 
 
 def test_commercial_prompt_includes_custom_fields_from_webhook():
@@ -209,12 +242,24 @@ def test_lead_doubt_human_escalation_rules_in_prompt():
     assert "como uma pessoa da equipe comercial humana" in TRIAGE_SYSTEM_PROMPT
     assert "nunca cite ou dê a entender que é um agente de IA" in TRIAGE_SYSTEM_PROMPT
     assert "logo mais entrará em contato" in TRIAGE_SYSTEM_PROMPT
-    assert (
-        "questionando se deve prosseguir" in TRIAGE_SYSTEM_PROMPT
-        or "questione o cliente cordialmente na mensagem se deve prosseguir com o envio/geração da proposta"
-        in TRIAGE_SYSTEM_PROMPT
-    )
+    assert "não peça confirmação redundante" in TRIAGE_SYSTEM_PROMPT
     assert "reitere cordialmente o pedido dos dados que ainda faltam" in TRIAGE_SYSTEM_PROMPT
+
+
+def test_proposal_validity_license_orientation_and_offline_prompt_rules():
+    from src.agent.prompts import SNAPSHOT_OFFLINE_SYSTEM_PROMPT
+
+    assert "PRAZO DE VALIDADE AUTOMÁTICO" in TRIAGE_SYSTEM_PROMPT
+    assert "NÃO precisa ser incluído pelo agente nem solicitado ao lead" in TRIAGE_SYSTEM_PROMPT
+    assert "ENVIO AUTOMÁTICO PELO JIRA" in TRIAGE_SYSTEM_PROMPT
+    assert "E-MAIL INFORMATIVO PRÉVIO" in TRIAGE_SYSTEM_PROMPT
+    assert "TRATAMENTO DE PROBLEMAS NA GERAÇÃO" in TRIAGE_SYSTEM_PROMPT
+    assert "direcionar o lead para os agentes humanos" in TRIAGE_SYSTEM_PROMPT
+    assert "ORIENTAÇÃO DE LICENÇA OBRIGATÓRIA" in TRIAGE_SYSTEM_PROMPT
+    assert "ANTECIPAÇÃO DA COLETA DE DADOS DA PROPOSTA" in TRIAGE_SYSTEM_PROMPT
+    assert "REITERAÇÃO E COBRANÇA CONTÍNUA" in TRIAGE_SYSTEM_PROMPT
+    assert "Você é um Agente Comercial de CRM da Loonar." in SNAPSHOT_OFFLINE_SYSTEM_PROMPT
+    assert "sem utilizar ferramentas externas" in SNAPSHOT_OFFLINE_SYSTEM_PROMPT
 
 
 def test_parse_decision_from_clean_json():
@@ -519,9 +564,14 @@ def test_local_provider_runs_chat_completions_tool_cycle(
     sample_outage_webhook_payload,
     provider,
     model_name,
+    caplog,
 ):
     agent = JiraTriageAgent()
     agent.settings.model_provider = provider
+    agent.settings.log_level = "DEBUG"
+    agent.settings.jira_debug_log_content = True
+    agent.settings.jira_debug_log_content_issue_key = "ITSM-101"
+    agent.settings.jira_debug_log_content_until = datetime.now(UTC) + timedelta(minutes=5)
     if provider == "ollama":
         agent.settings.ollama_model_name = model_name
     else:
@@ -573,12 +623,15 @@ def test_local_provider_runs_chat_completions_tool_cycle(
     ]
     jira_connector.execute_tool.return_value = {"key": "ITSM-101"}
 
-    with patch.object(agent.foundry_manager, "get_openai_client", return_value=mock_client):
-        with patch(
+    with (
+        caplog.at_level(logging.DEBUG, logger="triage-agent"),
+        patch.object(agent.foundry_manager, "get_openai_client", return_value=mock_client),
+        patch(
             "src.agent.triage_agent.get_jira_connector",
             return_value=jira_connector,
-        ):
-            result = agent.process_ticket(payload)
+        ),
+    ):
+        result = agent.process_ticket(payload)
 
     assert result.success is True
     first_request = mock_client.chat.completions.create.call_args_list[0].kwargs
@@ -591,6 +644,11 @@ def test_local_provider_runs_chat_completions_tool_cycle(
         "get_issue_fields",
         {"issue_key": "ITSM-101"},
     )
+    assert '"stage": "model_input"' in caplog.text
+    assert '"stage": "model_request"' in caplog.text
+    assert '"stage": "model_response"' in caplog.text
+    assert '"stage": "tool_call"' in caplog.text
+    assert '"stage": "tool_result"' in caplog.text
     calls = mock_client.chat.completions.create.call_args_list
     assert calls[0].kwargs["tools"] == [
         {

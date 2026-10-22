@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import logging
 import time
 from unittest.mock import patch
 
@@ -19,7 +20,7 @@ def test_foundry_project_endpoint_alias():
     assert settings.azure_ai_project_endpoint == "https://example.services.ai.azure.com/project"
 
 
-def test_invocation_streams_shared_webhook_result():
+def test_invocation_streams_shared_webhook_result(caplog):
     """Keep long-running Foundry invocations alive and return the shared handler result."""
     raw_body = b'{"webhookEvent":"jira:issue_created"}'
     received = False
@@ -46,6 +47,7 @@ def test_invocation_streams_shared_webhook_result():
         return 202, {"status": "accepted"}
 
     with (
+        caplog.at_level(logging.INFO, logger="hosted-agent"),
         patch(
             "src.hosted_agent.main.process_jira_webhook",
             side_effect=process_webhook,
@@ -77,3 +79,6 @@ def test_invocation_streams_shared_webhook_result():
     assert forwarded_body == raw_body
     assert not forwarded_headers
     assert process_webhook.call_args.kwargs["require_webhook_signature"] is False
+    transaction_id = process_webhook.call_args.kwargs["transaction_id"]
+    assert transaction_id
+    assert f'"transaction_id": "{transaction_id}"' in caplog.text

@@ -77,12 +77,20 @@ class ProposalArguments(IssueKeyArguments):
     billing: str = Field(min_length=1, max_length=255)
     payment_days: str = Field(min_length=1, max_length=100)
     payment_method: str = Field(min_length=1, max_length=100)
-    proposal_valid_until: date
+    proposal_valid_until: date | None = None
     proposal_information: str = Field(min_length=1, max_length=4000)
 
 
 class PurchasingTransitionArguments(IssueKeyArguments):
-    product_object_id: str = Field(min_length=1, max_length=100, pattern=r"^\d+$")
+    product_object_id: str = Field(
+        min_length=1,
+        max_length=100,
+        pattern=r"^\d+$",
+        description=(
+            "objectId numérico do produto retornado por uma busca no Jira Assets; "
+            "não use o ID do fabricante."
+        ),
+    )
     quantity: int = Field(ge=1, le=100000)
     quotation_classification: str = Field(min_length=1, max_length=100)
     period_months: str = Field(min_length=1, max_length=100)
@@ -253,13 +261,17 @@ JIRA_TOOLS: tuple[JiraTool, ...] = (
     ),
     JiraTool(
         "search_assets_products_by_manufacturer",
-        "Pesquisa produtos no Jira Assets pelo fabricante, com a consulta AQL escapada.",
+        "Pesquisa produtos no Jira Assets pelo fabricante, com a consulta AQL escapada. "
+        "Retorna o id/objectId numérico de cada produto; use esse identificador como "
+        "product_object_id ao chamar send_item_to_purchasing.",
         ProductSearchArguments,
         "search_assets_products_by_manufacturer",
     ),
     JiraTool(
         "search_assets_products_by_software",
-        "Pesquisa no Jira Assets o software citado no lead para obter produto e fabricante.",
+        "Pesquisa no Jira Assets o software citado no lead para obter produto e fabricante. "
+        "Retorna o id/objectId numérico de cada produto; use esse identificador como "
+        "product_object_id ao chamar send_item_to_purchasing.",
         SoftwareSearchArguments,
         "search_assets_products_by_software",
     ),
@@ -272,7 +284,11 @@ JIRA_TOOLS: tuple[JiraTool, ...] = (
     ),
     JiraTool(
         "send_item_to_purchasing",
-        "Preenche os campos de compra e executa a transição do item. Requer escrita habilitada.",
+        "Preenche os campos de compra e executa a transição do item. "
+        "Use product_object_id obtido do resultado de uma busca de produto no Jira Assets. "
+        "A ferramenta grava o produto no campo Assets customfield_11828 como uma referência "
+        "com workspaceId configurado, id no formato workspaceId:objectId e objectId. "
+        "Requer escrita habilitada.",
         PurchasingTransitionArguments,
         "send_item_to_purchasing",
         True,

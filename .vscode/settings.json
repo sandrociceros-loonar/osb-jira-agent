@@ -8,5 +8,12 @@
     "workbench.externalBrowser": "chrome",
     "chat.tools.terminal.autoApprove": {
         "./scripts/check-and-setup-dependencies.sh": true
-    }
+    },
+    "makefile.makefilePath": "${workspaceFolder}/Makefile",
+    "makefile.configurations": [
+        {
+            "name": "Default",
+            "makeArgs": []
+        }
+    ]
 }

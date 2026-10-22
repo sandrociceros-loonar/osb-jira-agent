@@ -9,7 +9,11 @@ from opentelemetry.trace import Status, StatusCode
 from pydantic import ValidationError
 
 from src.agent.foundry_client import get_foundry_manager
-from src.agent.prompts import TRIAGE_SYSTEM_PROMPT, format_triage_user_prompt
+from src.agent.prompts import (
+    SNAPSHOT_OFFLINE_SYSTEM_PROMPT,
+    TRIAGE_SYSTEM_PROMPT,
+    format_triage_user_prompt,
+)
 from src.config import get_settings
 from src.jira.connector import JiraConnector, JiraConnectorError, get_jira_connector
 from src.models.agent_result import (
@@ -17,7 +21,7 @@ from src.models.agent_result import (
     TriageDecision,
 )
 from src.models.jira_webhook import JiraComment, JiraWebhookPayload
-from src.utils.logger import setup_logger
+from src.utils.logger import log_debug_content, setup_logger
 
 logger = setup_logger("triage-agent")
 tracer = trace.get_tracer(__name__)
@@ -94,6 +98,11 @@ class JiraTriageAgent:
                     )
                 },
             )
+            self._log_debug_content(
+                issue_key,
+                "model_input",
+                {"instructions": TRIAGE_SYSTEM_PROMPT, "input": user_prompt},
+            )
 
             if self._is_agent_comment(webhook_payload.comment):
                 return self._skipped_agent_comment(issue_key)
@@ -111,6 +120,11 @@ class JiraTriageAgent:
                     )
                 ):
                     latest_comment_result = jira_connector.get_latest_issue_comment(issue_key)
+                    self._log_debug_content(
+                        issue_key,
+                        "jira_latest_comment",
+                        latest_comment_result,
+                    )
                     latest_comment = latest_comment_result.get("latest_comment")
                     if self._is_agent_comment(latest_comment, jira_connector):
                         return self._skipped_agent_comment(issue_key)
@@ -125,6 +139,7 @@ class JiraTriageAgent:
                         openai_client,
                         user_prompt,
                         jira_connector,
+                        issue_key,
                     )
                     actions.extend(tool_actions)
                     assistant_content = response.choices[0].message.content or ""
@@ -133,15 +148,34 @@ class JiraTriageAgent:
                         logger.info(
                             "Conector Jira não configurado; ferramentas Jira indisponíveis."
                         )
+                        self._log_debug_content(
+                            issue_key,
+                            "model_request",
+                            {
+                                "model": self.settings.azure_ai_model_deployment_name,
+                                "instructions": SNAPSHOT_OFFLINE_SYSTEM_PROMPT,
+                                "input": user_prompt,
+                            },
+                        )
                         response = openai_client.responses.create(
                             model=self.settings.azure_ai_model_deployment_name,
-                            instructions=TRIAGE_SYSTEM_PROMPT,
+                            instructions=SNAPSHOT_OFFLINE_SYSTEM_PROMPT,
                             input=user_prompt,
                             max_output_tokens=6000,
                             reasoning={"effort": "low"},
                         )
                     else:
                         tool_schemas = jira_connector.available_tool_schemas()
+                        self._log_debug_content(
+                            issue_key,
+                            "model_request",
+                            {
+                                "model": self.settings.azure_ai_model_deployment_name,
+                                "instructions": TRIAGE_SYSTEM_PROMPT,
+                                "input": user_prompt,
+                                "tools": tool_schemas,
+                            },
+                        )
                         response = openai_client.responses.create(
                             model=self.settings.azure_ai_model_deployment_name,
                             instructions=TRIAGE_SYSTEM_PROMPT,
@@ -158,6 +192,7 @@ class JiraTriageAgent:
                             response,
                             jira_connector,
                             tool_schemas,
+                            issue_key,
                         )
                         actions.extend(tool_actions)
 
@@ -173,6 +208,7 @@ class JiraTriageAgent:
                     assistant_content = getattr(response, "output_text", "")
                 if not assistant_content:
                     raise ValueError("O modelo retornou uma resposta sem texto.")
+                self._log_debug_content(issue_key, "model_output", assistant_content)
                 decision = self.parse_decision_from_text(assistant_content)
 
                 actions = [
@@ -276,6 +312,7 @@ class JiraTriageAgent:
         response: object,
         jira_connector: object,
         tool_schemas: list[dict[str, object]],
+        issue_key: str,
     ) -> tuple[object, list[str]]:
         """Executes only registered Jira functions and continues the Responses turn."""
         completed_tool_actions: list[str] = []
@@ -308,7 +345,17 @@ class JiraTriageAgent:
                         f"Os argumentos da ferramenta '{name}' devem ser um objeto JSON."
                     )
 
+                self._log_debug_content(
+                    issue_key,
+                    "tool_call",
+                    {"name": name, "arguments": arguments},
+                )
                 result = self._execute_jira_tool(jira_connector, name, arguments)
+                self._log_debug_content(
+                    issue_key,
+                    "tool_result",
+                    {"name": name, "result": result},
+                )
                 tool_outputs.append(
                     {
                         "type": "function_call_output",
@@ -326,20 +373,23 @@ class JiraTriageAgent:
                     )
                 elif isinstance(result, dict) and result.get("pending"):
                     completed_tool_actions.append(
-                        "Atualização do fabricante pendente; geração de proposta bloqueada."
-                    )
-                elif (
-                    name == "generate_new_proposal"
-                    and isinstance(result, dict)
-                    and result.get("proposal_blocked")
-                ):
-                    completed_tool_actions.append(
-                        "Geração da proposta bloqueada porque o fabricante não foi confirmado."
+                        "Campo Fabricante não atualizado; continuar o fluxo sem bloqueio."
                     )
                 else:
                     completed_tool_actions.append(f"Ferramenta Jira executada: {name}.")
                 calls_used += 1
 
+            self._log_debug_content(
+                issue_key,
+                "model_request",
+                {
+                    "model": self.settings.azure_ai_model_deployment_name,
+                    "instructions": TRIAGE_SYSTEM_PROMPT,
+                    "previous_response_id": response.id,
+                    "input": tool_outputs,
+                    "tools": tool_schemas,
+                },
+            )
             response = openai_client.responses.create(
                 model=self.settings.azure_ai_model_deployment_name,
                 instructions=TRIAGE_SYSTEM_PROMPT,
@@ -366,10 +416,14 @@ class JiraTriageAgent:
         openai_client: object,
         user_prompt: str,
         jira_connector: object | None,
+        issue_key: str,
     ) -> tuple[object, list[str]]:
         """Executa o ciclo Chat Completions usado pelos modelos locais."""
+        system_content = (
+            SNAPSHOT_OFFLINE_SYSTEM_PROMPT if jira_connector is None else TRIAGE_SYSTEM_PROMPT
+        )
         messages: list[dict[str, object]] = [
-            {"role": "system", "content": TRIAGE_SYSTEM_PROMPT},
+            {"role": "system", "content": system_content},
             {"role": "user", "content": user_prompt},
         ]
         tools: list[dict[str, object]] = []
@@ -404,8 +458,33 @@ class JiraTriageAgent:
                 request.update(max_tokens=1024, extra_body={"think": False})
             if tools:
                 request.update(tools=tools, tool_choice="auto")
+            self._log_debug_content(issue_key, "model_request", request)
             response = openai_client.chat.completions.create(**request)
             message = response.choices[0].message
+            dump_message = getattr(message, "model_dump", None)
+            if callable(dump_message):
+                response_content = dump_message(exclude_none=True)
+            else:
+                response_content = {
+                    "content": getattr(message, "content", None),
+                    "tool_calls": [
+                        {
+                            "id": getattr(call, "id", None),
+                            "name": getattr(getattr(call, "function", None), "name", None),
+                            "arguments": getattr(
+                                getattr(call, "function", None),
+                                "arguments",
+                                None,
+                            ),
+                        }
+                        for call in getattr(message, "tool_calls", []) or []
+                    ],
+                }
+            self._log_debug_content(
+                issue_key,
+                "model_response",
+                response_content,
+            )
             calls = message.tool_calls or []
             if not calls:
                 return response, completed_tool_actions
@@ -430,7 +509,17 @@ class JiraTriageAgent:
                         f"Os argumentos da ferramenta '{name}' devem ser um objeto JSON."
                     )
 
+                self._log_debug_content(
+                    issue_key,
+                    "tool_call",
+                    {"name": name, "arguments": arguments},
+                )
                 result = self._execute_jira_tool(jira_connector, name, arguments)
+                self._log_debug_content(
+                    issue_key,
+                    "tool_result",
+                    {"name": name, "result": result},
+                )
                 messages.append(
                     {
                         "role": "tool",
@@ -448,19 +537,22 @@ class JiraTriageAgent:
                     )
                 elif isinstance(result, dict) and result.get("pending"):
                     completed_tool_actions.append(
-                        "Atualização do fabricante pendente; geração de proposta bloqueada."
-                    )
-                elif (
-                    name == "generate_new_proposal"
-                    and isinstance(result, dict)
-                    and result.get("proposal_blocked")
-                ):
-                    completed_tool_actions.append(
-                        "Geração da proposta bloqueada porque o fabricante não foi confirmado."
+                        "Campo Fabricante não atualizado; continuar o fluxo sem bloqueio."
                     )
                 else:
                     completed_tool_actions.append(f"Ferramenta Jira executada: {name}.")
                 calls_used += 1
+
+    def _log_debug_content(self, issue_key: str, stage: str, content: object) -> None:
+        log_debug_content(
+            logger,
+            issue_key=issue_key,
+            stage=stage,
+            content=content,
+            enabled=self.settings.jira_debug_log_content,
+            configured_issue_key=self.settings.jira_debug_log_content_issue_key,
+            expires_at=self.settings.jira_debug_log_content_until,
+        )
 
     @staticmethod
     def _execute_jira_tool(
@@ -468,27 +560,6 @@ class JiraTriageAgent:
         name: str,
         arguments: dict[str, object],
     ) -> object:
-        if (
-            name == "generate_new_proposal"
-            and getattr(
-                jira_connector,
-                "manufacturer_update_pending",
-                False,
-            )
-            is True
-        ):
-            logger.warning(
-                "Proposta bloqueada para %s: fabricante ainda não foi confirmado.",
-                arguments.get("issue_key", "unknown issue"),
-            )
-            return {
-                "error": (
-                    "A proposta não pode ser gerada: a atualização do fabricante está pendente. "
-                    "Informe a pendência e solicite a liberação do campo no Jira."
-                ),
-                "success": False,
-                "proposal_blocked": True,
-            }
         with tracer.start_as_current_span(
             "jira.execute_tool",
             record_exception=False,
@@ -500,7 +571,10 @@ class JiraTriageAgent:
                 return jira_connector.execute_tool(name, arguments)
             except JiraConnectorError as exc:
                 span.set_status(Status(StatusCode.ERROR))
-                logger.warning("Erro ao executar ferramenta Jira '%s': %s", name, exc)
+                issue_key = arguments.get("issue_key", "-") if isinstance(arguments, dict) else "-"
+                logger.warning(
+                    "Erro ao executar ferramenta Jira '%s' (%s): %s", name, issue_key, exc
+                )
                 return {"error": str(exc), "success": False}
             except Exception:
                 span.set_status(Status(StatusCode.ERROR))

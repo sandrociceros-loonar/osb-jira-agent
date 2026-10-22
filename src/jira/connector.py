@@ -96,7 +96,6 @@ class JiraConnector:
         self.skip_manufacturer_update_if_not_editable = (
             settings.jira_skip_manufacturer_update_if_not_editable
         )
-        self.manufacturer_update_pending = False
         self.assets_access_token = settings.jira_assets_access_token
         self._assets_bearer_auth = bool(self.assets_access_token)
         self.assets_cloud_id = settings.jira_assets_cloud_id
@@ -464,31 +463,49 @@ class JiraConnector:
 
     def get_issue_fields(self, issue_key: str) -> dict[str, object]:
         key = self._encoded_issue_key(issue_key)
-        response = self._request(
-            "GET",
-            f"/rest/api/3/issue/{key}",
-            params={"expand": "names,editmeta,transitions"},
-        )
-        return self._json(response)
+        try:
+            response = self._request(
+                "GET",
+                f"/rest/api/3/issue/{key}",
+                params={"expand": "names,editmeta,transitions"},
+            )
+            return self._json(response)
+        except JiraConnectorError as exc:
+            if "HTTP 404" in str(exc):
+                return {
+                    "error": "not_found",
+                    "issue_key": issue_key,
+                    "message": f"Issue '{issue_key}' não foi encontrada ou está inacessível no Jira.",
+                }
+            raise
 
     def get_lead_details(self, issue_key: str) -> dict[str, object]:
         key = self._encoded_issue_key(issue_key)
         fields_str = self.LEAD_DETAILS_FIELDS
         if self.request_details_field_id and self.request_details_field_id not in fields_str:
             fields_str = f"{fields_str},{self.request_details_field_id}"
-        response = self._request(
-            "GET",
-            f"/rest/api/3/issue/{key}",
-            params={
-                "fieldsByKeys": "true",
-                "fields": fields_str,
-                "expand": "names",
-            },
-        )
-        data = self._json(response)
-        data["comments"] = self._list_issue_comments(key)
-        data["request_details"] = self._extract_lead_request_details(data)
-        return data
+        try:
+            response = self._request(
+                "GET",
+                f"/rest/api/3/issue/{key}",
+                params={
+                    "fieldsByKeys": "true",
+                    "fields": fields_str,
+                    "expand": "names",
+                },
+            )
+            data = self._json(response)
+            data["comments"] = self._list_issue_comments(key)
+            data["request_details"] = self._extract_lead_request_details(data)
+            return data
+        except JiraConnectorError as exc:
+            if "HTTP 404" in str(exc):
+                return {
+                    "error": "not_found",
+                    "issue_key": issue_key,
+                    "message": f"Issue '{issue_key}' não foi encontrada ou está inacessível no Jira.",
+                }
+            raise
 
     def _extract_lead_request_details(self, data: dict[str, object]) -> str | None:
         """Extrai o conteúdo textual do campo Detalhes da Solicitação."""
@@ -886,6 +903,7 @@ class JiraConnector:
                 compact_entries.append(
                     {
                         "id": entry.get("id"),
+                        "objectId": entry.get("id"),
                         "objectKey": entry.get("objectKey"),
                         "name": entry.get("label") or entry.get("name"),
                         "manufacturer": manufacturers,
@@ -1008,10 +1026,9 @@ class JiraConnector:
         except JiraManufacturerFieldNotEditableError as exc:
             if not self.skip_manufacturer_update_if_not_editable:
                 raise
-            self.manufacturer_update_pending = True
             logger.warning(
-                "Fabricante pendente para %s: o campo Jira não está editável; "
-                "geração de proposta bloqueada.",
+                "Campo Fabricante de %s não editável; atualização ignorada, "
+                "fluxo de proposta continua.",
                 issue_key,
             )
             return {
@@ -1117,16 +1134,25 @@ class JiraConnector:
 
     def get_proposal_item_values(self, issue_key: str) -> dict[str, object]:
         key = self._encoded_issue_key(issue_key)
-        response = self._request(
-            "GET",
-            f"/rest/api/3/issue/{key}",
-            params={
-                "fieldsByKeys": "true",
-                "expand": "names,editmeta",
-                "fields": self.PROPOSAL_ITEM_FIELDS,
-            },
-        )
-        return self._json(response)
+        try:
+            response = self._request(
+                "GET",
+                f"/rest/api/3/issue/{key}",
+                params={
+                    "fieldsByKeys": "true",
+                    "expand": "names,editmeta",
+                    "fields": self.PROPOSAL_ITEM_FIELDS,
+                },
+            )
+            return self._json(response)
+        except JiraConnectorError as exc:
+            if "HTTP 404" in str(exc):
+                return {
+                    "error": "not_found",
+                    "issue_key": issue_key,
+                    "message": f"Issue '{issue_key}' não foi encontrada ou está inacessível no Jira.",
+                }
+            raise
 
     def set_proposal_item_price(
         self,
@@ -1225,11 +1251,20 @@ class JiraConnector:
                     "Não foi possível atribuir issue para %s: %s", target_account_id, exc
                 )
 
-        # 3. Nota interna para a equipe humana
-        internal_msg = (
-            f"[Escalação Humana] Lead encaminhado para '{self.kb_human_escalation_team}'.\n"
-            f"Motivo: {reason}"
-        )
+        # 3. Nota/comentário padronizado para a equipe humana
+        if reason.startswith("[AGENTE DE IA] ERRO NO PROCESSAMENTO"):
+            internal_msg = (
+                f"{reason}\n\n"
+                f"Lead encaminhado para '{self.kb_human_escalation_team}'.\n"
+                f"Requer intervenção manual da equipe comercial humana."
+            )
+        else:
+            internal_msg = (
+                f"[AGENTE DE IA] ERRO NO PROCESSAMENTO\n\n"
+                f"Motivo: {reason}\n"
+                f"Lead encaminhado para '{self.kb_human_escalation_team}'.\n"
+                f"Requer intervenção manual da equipe comercial humana."
+            )
         try:
             self._request(
                 "POST",

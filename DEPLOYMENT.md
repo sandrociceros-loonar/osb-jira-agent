@@ -25,13 +25,36 @@ Publicar um deles **não** atualiza o outro. A Function chama o modelo do projet
 - Uma issue **de teste** no Jira, em um ambiente não produtivo, para validar comentários e
   transições. Não use uma issue comercial real para smoke tests com escritas habilitadas.
 
-Execute comandos `azd` na raiz deste projeto. O prefixo
-`AZURE_DEV_USER_AGENT=microsoft_foundry_skill` abaixo é local ao comando: não o grave no código,
-em `.env`, nem no ambiente persistente do `azd`.
+### Orquestração e Automação com Makefile
 
-## 2. Validar o código e a configuração
+O repositório disponibiliza comandos no [`Makefile`](./Makefile) para orquestrar todas as etapas:
 
-Na raiz do repositório:
+```bash
+# Diagnosticar e preparar o ambiente de desenvolvimento e arquivos de configuração (.env / local.settings.json)
+make setup
+
+# Apenas diagnosticar pré-requisitos locais sem instalar alterações
+make prereqs
+
+# Inicializar arquivos de configuração (.env e local.settings.json) a partir dos modelos de exemplo
+make config
+```
+
+Execute comandos `azd` e `make` na raiz deste projeto. O prefixo
+`AZURE_DEV_USER_AGENT=microsoft_foundry_skill` é embutido automaticamente pelos alvos do `make`.
+
+## 2. Validar o código, compilação e empacotamento
+
+Na raiz do repositório, você pode validar todos os componentes através do `make`:
+
+```bash
+make test       # Executa suite de testes com pytest
+make lint       # Checagem estática com ruff (src e tests)
+make compile    # Verifica sintaxe e compila bytecode Python (compileall)
+make package    # Sincroniza requirements.txt com lockfile e valida o repositório
+```
+
+Ou execute a checagem manual:
 
 ```bash
 uv sync --all-extras --group dev
@@ -41,9 +64,11 @@ git diff --check
 ```
 
 O Hosted Agent usa `dependencyResolution: remote_build`: se alguma dependência de runtime mudou,
-sincronize `requirements.txt` com o lockfile antes de publicar:
+sincronize `requirements.txt` com o lockfile antes de publicar (feito automaticamente pelo `make package`):
 
 ```bash
+make package
+# ou manualmente:
 uv export --format requirements-txt --no-dev --no-hashes --no-emit-project -o requirements.txt
 ```
 
@@ -101,6 +126,14 @@ Preencha no ambiente `azd`:
 - `JIRA_MANUFACTURER_FIELD_ID` como substituição opcional quando o nome do campo não puder ser
   encontrado; `JIRA_AGENT_ACCOUNT_ID` é recomendado para identificar com precisão comentários
   feitos pela conta do agente.
+- `JIRA_DEBUG_LOG_CONTENT`, `JIRA_DEBUG_LOG_CONTENT_ISSUE_KEY` e
+  `JIRA_DEBUG_LOG_CONTENT_UNTIL` ficam desabilitados/vazios por padrão. Para uma investigação,
+  configure a flag como `true`, informe uma issue ou `*` para todas as issues e uma expiração
+  ISO-8601 com fuso horário, e use `LOG_LEVEL=DEBUG`. Os logs incluem conteúdo do Jira e da
+  interação com o modelo/ferramentas até a expiração; valores de campos de credenciais são redigidos. Desative a flag
+  após o diagnóstico. O Terraform aplica o nível de log `Debug` do host da Function quando
+  `log_level = "DEBUG"`. A expiração não apaga telemetria já enviada ao Application Insights;
+  verifique a política de retenção e restrinja o acesso antes de habilitar.
 - `JIRA_SKIP_MANUFACTURER_UPDATE_IF_NOT_EDITABLE` para permitir que o webhook continue com a
   atualização do fabricante registrada como pendente quando o campo existir, mas não puder ser
   editado. O valor padrão é `false`; mesmo habilitado, o agente não pode gerar proposta enquanto
@@ -220,15 +253,38 @@ Revise todo o plano antes de aplicar. Se ele propuser recriar ou destruir recurs
 pare e corrija o state/configuração; não use `apply` como tentativa de diagnóstico. Após aprovação,
 aplique com `terraform -chdir=terraform apply`. O Terraform provisiona/configura a infraestrutura,
 mas não publica o pacote Python da Function nem a versão do Hosted Agent: publique a Function
-separadamente com `func azure functionapp publish` e o Hosted Agent com `azd deploy`.
+separadamente com `make deploy-function` (ou `func azure functionapp publish`) e o Hosted Agent com `make deploy` ou `make deploy-foundry`.
 
-## 4. Publicar o Hosted Agent (se essa entrada estiver em uso)
+## 4. Publicar o Hosted Agent (Tools hospedadas no Foundry)
 
 O Hosted Agent está declarado em `azure.yaml` com `codeConfiguration` e `remote_build`; use
-publicação de código com `azd deploy`, não um fluxo Docker/ACR. A implantação cria uma nova versão
-imutável do agente:
+publicação de código com `make deploy` ou `azd deploy`, não um fluxo Docker/ACR. A implantação cria uma nova versão
+imutável do agente e registra as tools hospedadas.
+
+### 4.1 Deploy Recomendado para Produção (Pipeline Completo)
+
+Para garantir qualidade, integridade de dependências e compilação antes de publicar:
 
 ```bash
+make deploy
+```
+
+O `make deploy` orquestra em sequência:
+1. `make test` (pytest)
+2. `make lint` (ruff)
+3. `make compile` (compileall bytecode)
+4. `make package` (export do requirements.txt sincronizado com lockfile)
+5. `make deploy-foundry` (publicação do Hosted Agent no Foundry via azd)
+6. `make status-foundry` (verificação da nova versão ativa)
+
+### 4.2 Deploy Direto no Foundry (Sem repetição de testes)
+
+Caso já tenha testado e empacotado e queira apenas publicar diretamente:
+
+```bash
+make deploy-foundry
+make status-foundry
+# ou diretamente via CLI:
 AZURE_DEV_USER_AGENT=microsoft_foundry_skill azd deploy osb-jira-agent --no-prompt
 AZURE_DEV_USER_AGENT=microsoft_foundry_skill azd ai agent show --output json
 ```
@@ -237,7 +293,17 @@ Confirme que a versão nova aparece ativa e que o endpoint `invocations` está p
 falhar, consulte `azd ai agent doctor --output json` e os logs do deployment antes de tentar de
 novo; não rode `azd provision` como tentativa genérica de corrigir falhas de código.
 
-### Smoke test de Invocations
+### 4.3 Teste Local do Agente no Foundry (Agent Inspector)
+
+Antes do deploy em produção, você pode testar o agente e as ferramentas localmente:
+
+```bash
+make run-foundry
+```
+
+Esse comando inicia o servidor local do Foundry Invocations e abre automaticamente o **Agent Inspector** no navegador para testes interativos.
+
+### 4.4 Smoke test de Invocations Remoto
 
 Este agente espera o **corpo bruto de um webhook Jira**, não uma mensagem livre como `"Olá"`.
 Use um arquivo JSON de uma issue de teste autorizada e não produtiva que siga o formato dos
@@ -261,7 +327,9 @@ Se os webhooks Jira apontam para a Function App, publique também a Function par
 código atualizado:
 
 ```bash
-func azure functionapp publish <nome-da-function-app>
+make deploy-function
+# ou diretamente via Core Tools:
+func azure functionapp publish <nome-da-function-app> --build remote
 ```
 
 O nome pode ser consultado no output Terraform `function_app_name`. Se a publicação indicar erro

@@ -462,6 +462,31 @@ def test_create_lead_rejects_unavailable_option_from_metadata():
             },
         ),
         (
+            "generate_new_proposal",
+            {
+                "issue_key": "OP-1",
+                "forecast_date": "2026-09-30",
+                "probability": "2 - Média",
+                "next_follow_up_date": "2026-10-02",
+                "priority": "1- Padrão",
+                "billing": "Empresa exemplo",
+                "payment_days": "28 dd",
+                "payment_method": "Boleto",
+                "proposal_information": "Informações comerciais",
+            },
+            "3",
+            {
+                "customfield_10142": "2026-09-30",
+                "customfield_10141": {"value": "2 - Média"},
+                "customfield_10140": "2026-10-02",
+                "priority": {"name": "1- Padrão"},
+                "customfield_10100": {"value": "Empresa exemplo"},
+                "customfield_10131": {"value": "28 dd"},
+                "customfield_10132": {"value": "Boleto"},
+                "customfield_10144": "Informações comerciais",
+            },
+        ),
+        (
             "send_item_to_purchasing",
             {
                 "issue_key": "OP-1",
@@ -617,6 +642,35 @@ def test_get_lead_details_paginates_complete_comment_history():
 
     assert [comment["id"] for comment in result["comments"]] == ["1", "2"]
     assert [request.url.params.get("startAt") for request in requests[1:]] == ["0", "1"]
+
+
+def test_read_tools_handle_404_not_found_cleanly():
+    def not_found_handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(404, request=request)
+
+    with JiraConnector(
+        jira_settings(),
+        transport=httpx.MockTransport(not_found_handler),
+    ) as connector:
+        fields_result = connector.execute_tool("get_issue_fields", {"issue_key": "OP-999"})
+        lead_result = connector.execute_tool("get_lead_details", {"issue_key": "OP-999"})
+        item_result = connector.execute_tool("get_proposal_item_values", {"issue_key": "OP-999"})
+
+    assert fields_result == {
+        "error": "not_found",
+        "issue_key": "OP-999",
+        "message": "Issue 'OP-999' não foi encontrada ou está inacessível no Jira.",
+    }
+    assert lead_result == {
+        "error": "not_found",
+        "issue_key": "OP-999",
+        "message": "Issue 'OP-999' não foi encontrada ou está inacessível no Jira.",
+    }
+    assert item_result == {
+        "error": "not_found",
+        "issue_key": "OP-999",
+        "message": "Issue 'OP-999' não foi encontrada ou está inacessível no Jira.",
+    }
 
 
 def test_attachment_download_is_scoped_to_issue_and_limited():
@@ -1026,7 +1080,6 @@ def test_update_lead_manufacturer_can_be_skipped_as_pending_when_not_editable():
             "update_lead_manufacturer",
             {"issue_key": "OP-1", "manufacturer_name": "Acme Software"},
         )
-        assert connector.manufacturer_update_pending is True
 
     assert result == {
         "issue_key": "OP-1",
@@ -1231,6 +1284,7 @@ def test_assets_product_search_limits_and_compacts_results():
     assert result["values"] == [
         {
             "id": "6969",
+            "objectId": "6969",
             "objectKey": "CRM-6969",
             "name": "Actions for Jira Service Desk",
             "manufacturer": ["Atlassian"],

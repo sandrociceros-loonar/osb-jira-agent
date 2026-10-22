@@ -1,9 +1,13 @@
 """Tests for shared Jira webhook processing."""
 
 import json
+import logging
+from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock, patch
 
+from src.config import Settings
 from src.security.webhook_verifier import WebhookSecurityError
+from src.utils.logger import log_debug_content
 from src.webhook_handler import process_jira_webhook
 
 
@@ -225,6 +229,7 @@ def test_webhook_emits_structured_logs_and_redacts_secrets(caplog):
             json.dumps(payload).encode(),
             headers,
             require_webhook_signature=True,
+            transaction_id="transaction-test-1",
         )
 
     assert status_code == 200
@@ -236,6 +241,106 @@ def test_webhook_emits_structured_logs_and_redacts_secrets(caplog):
     assert "super-secret-value-123" not in log_text
     assert "secret-jwt-token" not in log_text
     assert "***REDACTED***" in log_text
+    assert "Prazo de pagamento: 30 dias." not in log_text
+    assert "Avaliar lead" not in log_text
+    assert log_text.count('"transaction_id": "transaction-test-1"') == 2
+
+
+def test_debug_content_logs_are_issue_scoped_expiring_and_redact_credentials(caplog):
+    logger = logging.getLogger("jira-debug-content-test")
+    expires_at = datetime.now(UTC) + timedelta(minutes=10)
+
+    with caplog.at_level(logging.DEBUG, logger=logger.name):
+        logged = log_debug_content(
+            logger,
+            issue_key="OP-101",
+            stage="model_input",
+            content={
+                "comment": "Full customer comment",
+                "api_token": "never-log-this",
+            },
+            enabled=True,
+            configured_issue_key="op-101",
+            expires_at=expires_at,
+        )
+        wrong_issue_logged = log_debug_content(
+            logger,
+            issue_key="OP-102",
+            stage="model_input",
+            content="must not be logged",
+            enabled=True,
+            configured_issue_key="OP-101",
+            expires_at=expires_at,
+        )
+        all_issues_logged = log_debug_content(
+            logger,
+            issue_key="OP-102",
+            stage="model_output",
+            content="model output from a different issue",
+            enabled=True,
+            configured_issue_key="*",
+            expires_at=expires_at,
+        )
+        expired_logged = log_debug_content(
+            logger,
+            issue_key="OP-101",
+            stage="model_input",
+            content="must not be logged",
+            enabled=True,
+            configured_issue_key="OP-101",
+            expires_at=datetime.now(UTC) - timedelta(seconds=1),
+        )
+
+    assert logged is True
+    assert wrong_issue_logged is False
+    assert all_issues_logged is True
+    assert expired_logged is False
+    assert "[AGENT_DEBUG_CONTENT]" in caplog.text
+    assert "Full customer comment" in caplog.text
+    assert "model output from a different issue" in caplog.text
+    assert '"issue_key": "OP-102"' in caplog.text
+    assert "never-log-this" not in caplog.text
+    assert "***REDACTED***" in caplog.text
+
+
+def test_webhook_full_payload_is_logged_only_when_debug_is_explicitly_scoped(caplog):
+    import logging
+
+    payload = {
+        "webhookEvent": "comment_created",
+        "issue": {
+            "id": "10001",
+            "key": "OP-101",
+            "fields": {"summary": "Private lead details"},
+        },
+        "comment": {"body": "Full private customer comment"},
+    }
+    settings = Settings(
+        jira_debug_log_content=True,
+        jira_debug_log_content_issue_key="OP-101",
+        jira_debug_log_content_until=datetime.now(UTC) + timedelta(minutes=5),
+        log_level="DEBUG",
+    )
+
+    with (
+        caplog.at_level(logging.DEBUG, logger="jira-webhook-handler"),
+        patch("src.webhook_handler.get_settings", return_value=settings),
+        patch("src.webhook_handler.verify_jira_webhook"),
+        patch("src.webhook_handler.JiraTriageAgent") as agent_class,
+    ):
+        agent_class.return_value.process_ticket.return_value = MagicMock(
+            success=True,
+            model_dump=lambda mode: {"success": True},
+        )
+        status_code, _ = process_jira_webhook(
+            json.dumps(payload).encode(),
+            {},
+            require_webhook_signature=False,
+        )
+
+    assert status_code == 200
+    assert "Full private customer comment" in caplog.text
+    assert "Private lead details" in caplog.text
 
 
 def test_direct_jira_issue_json_payload_is_accepted():
@@ -318,6 +423,7 @@ def test_webhook_fast_return_when_agent_exceeds_wait_timeout(caplog):
             {},
             require_webhook_signature=True,
             wait_timeout_seconds=0.02,
+            transaction_id="transaction-background-1",
         )
         assert status_code == 200
         assert response_body["status"] == "processing"
@@ -332,3 +438,4 @@ def test_webhook_fast_return_when_agent_exceeds_wait_timeout(caplog):
     assert "[WEBHOOK_ACCEPTED_ASYNC]" in log_text
     assert "[WEBHOOK_RESULT]" in log_text
     assert "resp_slow" in log_text
+    assert log_text.count('"transaction_id": "transaction-background-1"') == 3

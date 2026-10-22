@@ -31,6 +31,19 @@ componente. Não publique segredos em arquivos versionados.
 | Base de conhecimento | `CONFLUENCE_SPACE_URL`, `CONFLUENCE_BASE_URL`, `CONFLUENCE_SPACE_KEY`, `CONFLUENCE_API_EMAIL`, `CONFLUENCE_API_TOKEN` | Identificam e autenticam o acesso ao espaço Confluence usado pela base de conhecimento. Sem credenciais Confluence próprias, são usadas as credenciais Jira. |
 | Webhook Confluence e comportamento da KB | `CONFLUENCE_WEBHOOK_SECRET`, `CONFLUENCE_WEBHOOK_SECRET_HEADER`, `KB_ENABLED`, `KB_CACHE_*`, `KB_MIN_CONFIDENCE_SCORE`, `KB_HUMAN_ESCALATION_*` | Protegem a entrada de eventos do Confluence e controlam habilitação, cache, confiança mínima e escalação humana. O segredo do webhook é usado somente pela Function. |
 | Ajustes gerais | `LOG_LEVEL`, `ENVIRONMENT`, `JIRA_ATTACHMENT_MAX_BYTES`, `AZURE_AI_MAX_TOOL_CALLS` | Ajustam logs, ambiente e limites de execução. |
+| Debug de conteúdo | `JIRA_DEBUG_LOG_CONTENT`, `JIRA_DEBUG_LOG_CONTENT_ISSUE_KEY`, `JIRA_DEBUG_LOG_CONTENT_UNTIL` | Habilitam logs completos do payload Jira, entradas/saídas do modelo e chamadas/resultados de ferramentas até uma expiração explícita. O escopo pode ser uma issue ou `*` para todas as issues. Requer `LOG_LEVEL=DEBUG`; chaves de credenciais são redigidas. Desabilitado por padrão. |
+
+Para uma issue, configure `JIRA_DEBUG_LOG_CONTENT=true` e
+`JIRA_DEBUG_LOG_CONTENT_ISSUE_KEY=OP-1234`. Para capturar todas as invocações com issue Jira,
+use `JIRA_DEBUG_LOG_CONTENT_ISSUE_KEY=*`. Em ambos os casos, configure
+`JIRA_DEBUG_LOG_CONTENT_UNTIL=<data-hora-UTC-futura>` (por exemplo, formato
+`AAAA-MM-DDTHH:MM:SSZ`) e `LOG_LEVEL=DEBUG` no runtime desejado. A data de expiração precisa incluir fuso horário; ao
+expirar, o conteúdo deixa de ser emitido mesmo que a flag permaneça ligada. Desligue a flag depois
+da investigação. O conteúdo pode conter dados pessoais/comerciais e será
+enviado ao destino de logs configurado; mantenha acesso e retenção restritos. A expiração interrompe
+novos logs, mas não apaga os registros já enviados; eles permanecem conforme a retenção configurada.
+Para uma Function local, configure também as duas chaves
+`AzureFunctionsJobHost__logging__logLevel__*` do `local.settings.json.example` para `Debug`.
 
 Os nomes e defaults completos são mantidos em [`src/config.py`](./src/config.py); os exemplos
 distribuídos estão em [`.env.example`](./.env.example) e

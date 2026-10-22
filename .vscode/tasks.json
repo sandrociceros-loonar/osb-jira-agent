@@ -84,6 +84,68 @@
         "command": "${config:azureFunctions.pythonVenv}/bin/python -m pip install -r requirements.txt"
       },
       "problemMatcher": []
+    },
+    {
+      "label": "Make: setup (prereqs + config + install)",
+      "type": "shell",
+      "command": "make setup",
+      "problemMatcher": []
+    },
+    {
+      "label": "Make: test",
+      "type": "shell",
+      "command": "make test",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Make: lint",
+      "type": "shell",
+      "command": "make lint",
+      "problemMatcher": []
+    },
+    {
+      "label": "Make: compile",
+      "type": "shell",
+      "command": "make compile",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Make: package",
+      "type": "shell",
+      "command": "make package",
+      "problemMatcher": []
+    },
+    {
+      "label": "Make: run-foundry (Agent Inspector)",
+      "type": "shell",
+      "command": "make run-foundry",
+      "problemMatcher": []
+    },
+    {
+      "label": "Make: deploy (Produção Foundry)",
+      "type": "shell",
+      "command": "make deploy",
+      "problemMatcher": []
+    },
+    {
+      "label": "Make: deploy-foundry (Direto)",
+      "type": "shell",
+      "command": "make deploy-foundry",
+      "problemMatcher": []
+    },
+    {
+      "label": "Make: status-foundry",
+      "type": "shell",
+      "command": "make status-foundry",
+      "problemMatcher": []
     }
   ],
   "inputs": [

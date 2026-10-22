@@ -22,3 +22,5 @@ __azurite_*.json
 **/__pycache__/
 *.py[cod]
 crash.*.log
+*.log
+scripts/

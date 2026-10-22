@@ -246,6 +246,24 @@ variable "log_level" {
   default     = "INFO"
 }
 
+variable "jira_debug_log_content" {
+  description = "Habilita temporariamente conteúdo completo nos logs, sujeito a issue e expiração"
+  type        = bool
+  default     = false
+}
+
+variable "jira_debug_log_content_issue_key" {
+  description = "Única issue Jira autorizada a aparecer nos logs de conteúdo completo"
+  type        = string
+  default     = ""
+}
+
+variable "jira_debug_log_content_until" {
+  description = "Expiração ISO-8601 com fuso horário para os logs temporários de conteúdo"
+  type        = string
+  default     = ""
+}
+
 variable "tags" {
   description = "Tags padrão para governança"
   type        = map(string)

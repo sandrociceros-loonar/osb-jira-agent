@@ -1,0 +1,4466 @@
+{
+  "resourceSpans": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "osb-jira-agent"
+            }
+          },
+          {
+            "key": "service.namespace",
+            "value": {
+              "stringValue": "jira"
+            }
+          },
+          {
+            "key": "telemetry.sdk.language",
+            "value": {
+              "stringValue": "python"
+            }
+          },
+          {
+            "key": "telemetry.sdk.name",
+            "value": {
+              "stringValue": "opentelemetry"
+            }
+          }
+        ]
+      },
+      "scopeSpans": [
+        {
+          "scope": {
+            "name": "jira-agent.transactions",
+            "version": "1.0.0"
+          },
+          "spans": [
+            {
+              "traceId": "eaebe75e7dc0f07e8669b4510e1541be",
+              "spanId": "203d51c442c8f000",
+              "parentSpanId": "",
+              "name": "Jira Lead OP-8989 (Execução eaebe75e)",
+              "kind": 2,
+              "startTimeUnixNano": "1792576216907000000",
+              "endTimeUnixNano": "1792576220912000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "jira.transaction_id",
+                  "value": {
+                    "stringValue": "eaebe75e7dc0f07e8669b4510e1541be"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processing"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 2005.6
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "eaebe75e7dc0f07e8669b4510e1541be",
+              "spanId": "7b0e332bffffffff",
+              "parentSpanId": "203d51c442c8f000",
+              "name": "WEBHOOK_RECEIVED",
+              "kind": 1,
+              "startTimeUnixNano": "1792576216907000000",
+              "endTimeUnixNano": "1792576216957000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RECEIVED"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "Open Lead"
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "eaebe75e7dc0f07e8669b4510e1541be",
+              "spanId": "28d2bb50ffffffff",
+              "parentSpanId": "203d51c442c8f000",
+              "name": "WEBHOOK_ACCEPTED_ASYNC",
+              "kind": 1,
+              "startTimeUnixNano": "1792576218907000000",
+              "endTimeUnixNano": "1792576220912000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_ACCEPTED_ASYNC"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processing"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 2005.6
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "21fd4370ffffffffffffffff0734df12",
+              "spanId": "e746f190ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RECEIVED (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792576216900000000",
+              "endTimeUnixNano": "1792576216950000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RECEIVED"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "Open Lead"
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "1a03f3c8ffffffffffffffff8c3f30a1",
+              "spanId": "0a685a98ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_ACCEPTED_ASYNC (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792576218907000000",
+              "endTimeUnixNano": "1792576220912000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_ACCEPTED_ASYNC"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processing"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 2005.6
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "edb20e28ffffffffffffffff82e02bde",
+              "spanId": "98f01ea05b492b00",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RESULT (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792576245971000000",
+              "endTimeUnixNano": "1792576275042000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RESULT"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processed"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 29071.61
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "gen_ai.run_id",
+                  "value": {
+                    "stringValue": "resp_06a8587f169db898006ad88af367c881958a3950d5be429e4c"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": "Solicitação comercial classificada como 'Lead'.; Ferramenta Jira executada: query_knowledge_base.; Ação Jira executada: Mensagem para o Cliente (Transição 36)."
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "13826c98ffffffffffffffff89c62831",
+              "spanId": "3d092590ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RECEIVED (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792576266740000000",
+              "endTimeUnixNano": "1792576266790000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RECEIVED"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "Open Lead"
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "1f6357a0ffffffffffffffff0a7536f1",
+              "spanId": "f0295a605b492b00",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RESULT (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792576267317000000",
+              "endTimeUnixNano": "1792576267894000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RESULT"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processed"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 577.89
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": "Evento ignorado: o comentário mais recente foi publicado pelo agente."
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "a9e76d8cffffffffffffffffc8d67e9a",
+              "spanId": "885a80f4ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RECEIVED (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792577681013000000",
+              "endTimeUnixNano": "1792577681063000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RECEIVED"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "Open Lead"
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "0aee7550ffffffffffffffff0557eea0",
+              "spanId": "080a2700ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_ACCEPTED_ASYNC (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792577683016000000",
+              "endTimeUnixNano": "1792577685020000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_ACCEPTED_ASYNC"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processing"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 2004.09
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "e5d67610ffffffffffffffff01676d5e",
+              "spanId": "0de999d0ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RESULT (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792577699253000000",
+              "endTimeUnixNano": "1792577717493000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RESULT"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processed"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 18240.96
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "gen_ai.run_id",
+                  "value": {
+                    "stringValue": "resp_08298c55b9a66152006ad890a0b7b48190a6a2f31a87573816"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": "Solicitação comercial classificada como 'Lead'.; Ação Jira executada: Mensagem para o Cliente (Transição 36)."
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "b0f48960ffffffffffffffff06984f0b",
+              "spanId": "62c33090ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RECEIVED (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792577952572000000",
+              "endTimeUnixNano": "1792577952622000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RECEIVED"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "Open Lead"
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "f5f5684effffffffffffffffe4865f5f",
+              "spanId": "13cd8e98ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_ACCEPTED_ASYNC (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792577954574000000",
+              "endTimeUnixNano": "1792577956575000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_ACCEPTED_ASYNC"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processing"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 2001.62
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "b4ee8e80ffffffffffffffff08e8ee4b",
+              "spanId": "e20a7734ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RESULT (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792577979928000000",
+              "endTimeUnixNano": "1792578007283000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RESULT"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processed"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 27355.61
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "gen_ai.run_id",
+                  "value": {
+                    "stringValue": "resp_0831b71c0a65e14a006ad891b8d0c48196a076fca68b4d219f"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": "Solicitação comercial classificada como 'Lead'.; Ferramenta Jira executada: start_lead_work.; Ação Jira executada: Mensagem para o Cliente (Transição 36)."
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "0ed547c8ffffffffffffffff8c745de0",
+              "spanId": "e134791cffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RECEIVED (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792578852707000000",
+              "endTimeUnixNano": "1792578852757000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RECEIVED"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "Open Lead"
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "b5dd59080e07f800008f70e08095dd5b",
+              "spanId": "2dfbca34ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_ACCEPTED_ASYNC (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792578854708000000",
+              "endTimeUnixNano": "1792578856709000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_ACCEPTED_ASYNC"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processing"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 2001.97
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "638c4392ffffffffffffffff2934c836",
+              "spanId": "ddaf58305b492b00",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RESULT (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792578881408000000",
+              "endTimeUnixNano": "1792578910110000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RESULT"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processed"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 28702.26
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "gen_ai.run_id",
+                  "value": {
+                    "stringValue": "resp_0e48712d61442a57006ad8953bf9ac8190b04e96994974deec"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": "Solicitação comercial classificada como 'Proposta'.; Ferramenta Jira executada: start_lead_work.; Ferramenta Jira executada: generate_new_proposal.; Ação Jira executada: Mensagem para o Cliente (Transição 36)."
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "54d3e10e6fef1ba72d0a9d4fba746c2d",
+              "spanId": "bca0e330ffffffff",
+              "parentSpanId": "",
+              "name": "Jira Lead OP-8989 (Execução 54d3e10e)",
+              "kind": 2,
+              "startTimeUnixNano": "1792576266746000000",
+              "endTimeUnixNano": "1792576266846000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "jira.transaction_id",
+                  "value": {
+                    "stringValue": "54d3e10e6fef1ba72d0a9d4fba746c2d"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "Open Lead"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "54d3e10e6fef1ba72d0a9d4fba746c2d",
+              "spanId": "34f08d90ffffffff",
+              "parentSpanId": "bca0e330ffffffff",
+              "name": "WEBHOOK_RECEIVED",
+              "kind": 1,
+              "startTimeUnixNano": "1792576266746000000",
+              "endTimeUnixNano": "1792576266796000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RECEIVED"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "Open Lead"
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "21fd4370ffffffffffffffff0734df12",
+              "spanId": "e746f190ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RECEIVED (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792576216900000000",
+              "endTimeUnixNano": "1792576216950000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RECEIVED"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "Open Lead"
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "1a03f3c8ffffffffffffffff8c3f30a1",
+              "spanId": "0a685a98ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_ACCEPTED_ASYNC (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792576218907000000",
+              "endTimeUnixNano": "1792576220912000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_ACCEPTED_ASYNC"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processing"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 2005.6
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "edb20e28ffffffffffffffff82e02bde",
+              "spanId": "98f01ea05b492b00",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RESULT (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792576245971000000",
+              "endTimeUnixNano": "1792576275042000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RESULT"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processed"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 29071.61
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "gen_ai.run_id",
+                  "value": {
+                    "stringValue": "resp_06a8587f169db898006ad88af367c881958a3950d5be429e4c"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": "Solicitação comercial classificada como 'Lead'.; Ferramenta Jira executada: query_knowledge_base.; Ação Jira executada: Mensagem para o Cliente (Transição 36)."
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "13826c98ffffffffffffffff89c62831",
+              "spanId": "3d092590ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RECEIVED (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792576266740000000",
+              "endTimeUnixNano": "1792576266790000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RECEIVED"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "Open Lead"
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "1f6357a0ffffffffffffffff0a7536f1",
+              "spanId": "f0295a605b492b00",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RESULT (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792576267317000000",
+              "endTimeUnixNano": "1792576267894000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RESULT"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processed"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 577.89
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": "Evento ignorado: o comentário mais recente foi publicado pelo agente."
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "a9e76d8cffffffffffffffffc8d67e9a",
+              "spanId": "885a80f4ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RECEIVED (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792577681013000000",
+              "endTimeUnixNano": "1792577681063000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RECEIVED"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "Open Lead"
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "0aee7550ffffffffffffffff0557eea0",
+              "spanId": "080a2700ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_ACCEPTED_ASYNC (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792577683016000000",
+              "endTimeUnixNano": "1792577685020000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_ACCEPTED_ASYNC"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processing"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 2004.09
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "e5d67610ffffffffffffffff01676d5e",
+              "spanId": "0de999d0ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RESULT (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792577699253000000",
+              "endTimeUnixNano": "1792577717493000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RESULT"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processed"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 18240.96
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "gen_ai.run_id",
+                  "value": {
+                    "stringValue": "resp_08298c55b9a66152006ad890a0b7b48190a6a2f31a87573816"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": "Solicitação comercial classificada como 'Lead'.; Ação Jira executada: Mensagem para o Cliente (Transição 36)."
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "b0f48960ffffffffffffffff06984f0b",
+              "spanId": "62c33090ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RECEIVED (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792577952572000000",
+              "endTimeUnixNano": "1792577952622000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RECEIVED"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "Open Lead"
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "f5f5684effffffffffffffffe4865f5f",
+              "spanId": "13cd8e98ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_ACCEPTED_ASYNC (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792577954574000000",
+              "endTimeUnixNano": "1792577956575000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_ACCEPTED_ASYNC"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processing"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 2001.62
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "b4ee8e80ffffffffffffffff08e8ee4b",
+              "spanId": "e20a7734ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RESULT (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792577979928000000",
+              "endTimeUnixNano": "1792578007283000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RESULT"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processed"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 27355.61
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "gen_ai.run_id",
+                  "value": {
+                    "stringValue": "resp_0831b71c0a65e14a006ad891b8d0c48196a076fca68b4d219f"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": "Solicitação comercial classificada como 'Lead'.; Ferramenta Jira executada: start_lead_work.; Ação Jira executada: Mensagem para o Cliente (Transição 36)."
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "0ed547c8ffffffffffffffff8c745de0",
+              "spanId": "e134791cffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RECEIVED (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792578852707000000",
+              "endTimeUnixNano": "1792578852757000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RECEIVED"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "Open Lead"
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "b5dd59080e07f800008f70e08095dd5b",
+              "spanId": "2dfbca34ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_ACCEPTED_ASYNC (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792578854708000000",
+              "endTimeUnixNano": "1792578856709000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_ACCEPTED_ASYNC"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processing"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 2001.97
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "638c4392ffffffffffffffff2934c836",
+              "spanId": "ddaf58305b492b00",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RESULT (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792578881408000000",
+              "endTimeUnixNano": "1792578910110000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RESULT"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processed"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 28702.26
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "gen_ai.run_id",
+                  "value": {
+                    "stringValue": "resp_0e48712d61442a57006ad8953bf9ac8190b04e96994974deec"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": "Solicitação comercial classificada como 'Proposta'.; Ferramenta Jira executada: start_lead_work.; Ferramenta Jira executada: generate_new_proposal.; Ação Jira executada: Mensagem para o Cliente (Transição 36)."
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "7f3d1b70e0998885f1fc401cc7e8b6e5",
+              "spanId": "e05968c8957b6000",
+              "parentSpanId": "",
+              "name": "Jira Lead OP-8989 (Execução 7f3d1b70)",
+              "kind": 2,
+              "startTimeUnixNano": "1792577681018000000",
+              "endTimeUnixNano": "1792577685021000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "jira.transaction_id",
+                  "value": {
+                    "stringValue": "7f3d1b70e0998885f1fc401cc7e8b6e5"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processing"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 2004.09
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "7f3d1b70e0998885f1fc401cc7e8b6e5",
+              "spanId": "a8d108d0ffffffff",
+              "parentSpanId": "e05968c8957b6000",
+              "name": "WEBHOOK_RECEIVED",
+              "kind": 1,
+              "startTimeUnixNano": "1792577681018000000",
+              "endTimeUnixNano": "1792577681068000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RECEIVED"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "Open Lead"
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "7f3d1b70e0998885f1fc401cc7e8b6e5",
+              "spanId": "8ecc031bffffffff",
+              "parentSpanId": "e05968c8957b6000",
+              "name": "WEBHOOK_ACCEPTED_ASYNC",
+              "kind": 1,
+              "startTimeUnixNano": "1792577683017000000",
+              "endTimeUnixNano": "1792577685021000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_ACCEPTED_ASYNC"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processing"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 2004.09
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "21fd4370ffffffffffffffff0734df12",
+              "spanId": "e746f190ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RECEIVED (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792576216900000000",
+              "endTimeUnixNano": "1792576216950000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RECEIVED"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "Open Lead"
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "1a03f3c8ffffffffffffffff8c3f30a1",
+              "spanId": "0a685a98ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_ACCEPTED_ASYNC (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792576218907000000",
+              "endTimeUnixNano": "1792576220912000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_ACCEPTED_ASYNC"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processing"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 2005.6
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "edb20e28ffffffffffffffff82e02bde",
+              "spanId": "98f01ea05b492b00",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RESULT (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792576245971000000",
+              "endTimeUnixNano": "1792576275042000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RESULT"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processed"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 29071.61
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "gen_ai.run_id",
+                  "value": {
+                    "stringValue": "resp_06a8587f169db898006ad88af367c881958a3950d5be429e4c"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": "Solicitação comercial classificada como 'Lead'.; Ferramenta Jira executada: query_knowledge_base.; Ação Jira executada: Mensagem para o Cliente (Transição 36)."
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "13826c98ffffffffffffffff89c62831",
+              "spanId": "3d092590ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RECEIVED (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792576266740000000",
+              "endTimeUnixNano": "1792576266790000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RECEIVED"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "Open Lead"
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "1f6357a0ffffffffffffffff0a7536f1",
+              "spanId": "f0295a605b492b00",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RESULT (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792576267317000000",
+              "endTimeUnixNano": "1792576267894000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RESULT"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processed"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 577.89
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": "Evento ignorado: o comentário mais recente foi publicado pelo agente."
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "a9e76d8cffffffffffffffffc8d67e9a",
+              "spanId": "885a80f4ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RECEIVED (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792577681013000000",
+              "endTimeUnixNano": "1792577681063000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RECEIVED"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "Open Lead"
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "0aee7550ffffffffffffffff0557eea0",
+              "spanId": "080a2700ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_ACCEPTED_ASYNC (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792577683016000000",
+              "endTimeUnixNano": "1792577685020000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_ACCEPTED_ASYNC"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processing"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 2004.09
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "e5d67610ffffffffffffffff01676d5e",
+              "spanId": "0de999d0ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RESULT (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792577699253000000",
+              "endTimeUnixNano": "1792577717493000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RESULT"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processed"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 18240.96
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "gen_ai.run_id",
+                  "value": {
+                    "stringValue": "resp_08298c55b9a66152006ad890a0b7b48190a6a2f31a87573816"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": "Solicitação comercial classificada como 'Lead'.; Ação Jira executada: Mensagem para o Cliente (Transição 36)."
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "b0f48960ffffffffffffffff06984f0b",
+              "spanId": "62c33090ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RECEIVED (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792577952572000000",
+              "endTimeUnixNano": "1792577952622000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RECEIVED"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "Open Lead"
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "f5f5684effffffffffffffffe4865f5f",
+              "spanId": "13cd8e98ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_ACCEPTED_ASYNC (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792577954574000000",
+              "endTimeUnixNano": "1792577956575000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_ACCEPTED_ASYNC"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processing"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 2001.62
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "b4ee8e80ffffffffffffffff08e8ee4b",
+              "spanId": "e20a7734ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RESULT (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792577979928000000",
+              "endTimeUnixNano": "1792578007283000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RESULT"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processed"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 27355.61
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "gen_ai.run_id",
+                  "value": {
+                    "stringValue": "resp_0831b71c0a65e14a006ad891b8d0c48196a076fca68b4d219f"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": "Solicitação comercial classificada como 'Lead'.; Ferramenta Jira executada: start_lead_work.; Ação Jira executada: Mensagem para o Cliente (Transição 36)."
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "0ed547c8ffffffffffffffff8c745de0",
+              "spanId": "e134791cffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RECEIVED (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792578852707000000",
+              "endTimeUnixNano": "1792578852757000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RECEIVED"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "Open Lead"
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "b5dd59080e07f800008f70e08095dd5b",
+              "spanId": "2dfbca34ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_ACCEPTED_ASYNC (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792578854708000000",
+              "endTimeUnixNano": "1792578856709000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_ACCEPTED_ASYNC"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processing"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 2001.97
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "638c4392ffffffffffffffff2934c836",
+              "spanId": "ddaf58305b492b00",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RESULT (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792578881408000000",
+              "endTimeUnixNano": "1792578910110000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RESULT"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processed"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 28702.26
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "gen_ai.run_id",
+                  "value": {
+                    "stringValue": "resp_0e48712d61442a57006ad8953bf9ac8190b04e96994974deec"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": "Solicitação comercial classificada como 'Proposta'.; Ferramenta Jira executada: start_lead_work.; Ferramenta Jira executada: generate_new_proposal.; Ação Jira executada: Mensagem para o Cliente (Transição 36)."
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "21384d52aa47f49f768ed78215eb8d06",
+              "spanId": "7d7d65464e6bbc80",
+              "parentSpanId": "",
+              "name": "Jira Lead OP-8989 (Execução 21384d52)",
+              "kind": 2,
+              "startTimeUnixNano": "1792577952579000000",
+              "endTimeUnixNano": "1792577956575000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "jira.transaction_id",
+                  "value": {
+                    "stringValue": "21384d52aa47f49f768ed78215eb8d06"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processing"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 2001.62
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "21384d52aa47f49f768ed78215eb8d06",
+              "spanId": "f31b255cffffffff",
+              "parentSpanId": "7d7d65464e6bbc80",
+              "name": "WEBHOOK_RECEIVED",
+              "kind": 1,
+              "startTimeUnixNano": "1792577952579000000",
+              "endTimeUnixNano": "1792577952629000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RECEIVED"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "Open Lead"
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "21384d52aa47f49f768ed78215eb8d06",
+              "spanId": "c0cb6b3cffffffff",
+              "parentSpanId": "7d7d65464e6bbc80",
+              "name": "WEBHOOK_ACCEPTED_ASYNC",
+              "kind": 1,
+              "startTimeUnixNano": "1792577954574000000",
+              "endTimeUnixNano": "1792577956575000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_ACCEPTED_ASYNC"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processing"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 2001.62
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "21fd4370ffffffffffffffff0734df12",
+              "spanId": "e746f190ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RECEIVED (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792576216900000000",
+              "endTimeUnixNano": "1792576216950000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RECEIVED"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "Open Lead"
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "1a03f3c8ffffffffffffffff8c3f30a1",
+              "spanId": "0a685a98ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_ACCEPTED_ASYNC (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792576218907000000",
+              "endTimeUnixNano": "1792576220912000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_ACCEPTED_ASYNC"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processing"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 2005.6
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "edb20e28ffffffffffffffff82e02bde",
+              "spanId": "98f01ea05b492b00",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RESULT (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792576245971000000",
+              "endTimeUnixNano": "1792576275042000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RESULT"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processed"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 29071.61
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "gen_ai.run_id",
+                  "value": {
+                    "stringValue": "resp_06a8587f169db898006ad88af367c881958a3950d5be429e4c"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": "Solicitação comercial classificada como 'Lead'.; Ferramenta Jira executada: query_knowledge_base.; Ação Jira executada: Mensagem para o Cliente (Transição 36)."
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "13826c98ffffffffffffffff89c62831",
+              "spanId": "3d092590ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RECEIVED (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792576266740000000",
+              "endTimeUnixNano": "1792576266790000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RECEIVED"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "Open Lead"
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "1f6357a0ffffffffffffffff0a7536f1",
+              "spanId": "f0295a605b492b00",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RESULT (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792576267317000000",
+              "endTimeUnixNano": "1792576267894000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RESULT"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processed"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 577.89
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": "Evento ignorado: o comentário mais recente foi publicado pelo agente."
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "a9e76d8cffffffffffffffffc8d67e9a",
+              "spanId": "885a80f4ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RECEIVED (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792577681013000000",
+              "endTimeUnixNano": "1792577681063000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RECEIVED"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "Open Lead"
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "0aee7550ffffffffffffffff0557eea0",
+              "spanId": "080a2700ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_ACCEPTED_ASYNC (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792577683016000000",
+              "endTimeUnixNano": "1792577685020000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_ACCEPTED_ASYNC"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processing"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 2004.09
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "e5d67610ffffffffffffffff01676d5e",
+              "spanId": "0de999d0ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RESULT (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792577699253000000",
+              "endTimeUnixNano": "1792577717493000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RESULT"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processed"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 18240.96
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "gen_ai.run_id",
+                  "value": {
+                    "stringValue": "resp_08298c55b9a66152006ad890a0b7b48190a6a2f31a87573816"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": "Solicitação comercial classificada como 'Lead'.; Ação Jira executada: Mensagem para o Cliente (Transição 36)."
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "b0f48960ffffffffffffffff06984f0b",
+              "spanId": "62c33090ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RECEIVED (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792577952572000000",
+              "endTimeUnixNano": "1792577952622000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RECEIVED"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "Open Lead"
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "f5f5684effffffffffffffffe4865f5f",
+              "spanId": "13cd8e98ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_ACCEPTED_ASYNC (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792577954574000000",
+              "endTimeUnixNano": "1792577956575000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_ACCEPTED_ASYNC"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processing"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 2001.62
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "b4ee8e80ffffffffffffffff08e8ee4b",
+              "spanId": "e20a7734ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RESULT (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792577979928000000",
+              "endTimeUnixNano": "1792578007283000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RESULT"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processed"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 27355.61
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "gen_ai.run_id",
+                  "value": {
+                    "stringValue": "resp_0831b71c0a65e14a006ad891b8d0c48196a076fca68b4d219f"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": "Solicitação comercial classificada como 'Lead'.; Ferramenta Jira executada: start_lead_work.; Ação Jira executada: Mensagem para o Cliente (Transição 36)."
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "0ed547c8ffffffffffffffff8c745de0",
+              "spanId": "e134791cffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RECEIVED (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792578852707000000",
+              "endTimeUnixNano": "1792578852757000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RECEIVED"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "Open Lead"
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "b5dd59080e07f800008f70e08095dd5b",
+              "spanId": "2dfbca34ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_ACCEPTED_ASYNC (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792578854708000000",
+              "endTimeUnixNano": "1792578856709000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_ACCEPTED_ASYNC"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processing"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 2001.97
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "638c4392ffffffffffffffff2934c836",
+              "spanId": "ddaf58305b492b00",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RESULT (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792578881408000000",
+              "endTimeUnixNano": "1792578910110000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RESULT"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processed"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 28702.26
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "gen_ai.run_id",
+                  "value": {
+                    "stringValue": "resp_0e48712d61442a57006ad8953bf9ac8190b04e96994974deec"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": "Solicitação comercial classificada como 'Proposta'.; Ferramenta Jira executada: start_lead_work.; Ferramenta Jira executada: generate_new_proposal.; Ação Jira executada: Mensagem para o Cliente (Transição 36)."
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "d77e2bccca000492f00a60170a8ada01",
+              "spanId": "45e08ee007ee2000",
+              "parentSpanId": "",
+              "name": "Jira Lead OP-8989 (Execução d77e2bcc)",
+              "kind": 2,
+              "startTimeUnixNano": "1792578852714000000",
+              "endTimeUnixNano": "1792578856709000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "jira.transaction_id",
+                  "value": {
+                    "stringValue": "d77e2bccca000492f00a60170a8ada01"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processing"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 2001.97
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "d77e2bccca000492f00a60170a8ada01",
+              "spanId": "2c2da020ffffffff",
+              "parentSpanId": "45e08ee007ee2000",
+              "name": "WEBHOOK_RECEIVED",
+              "kind": 1,
+              "startTimeUnixNano": "1792578852714000000",
+              "endTimeUnixNano": "1792578852764000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RECEIVED"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "Open Lead"
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "d77e2bccca000492f00a60170a8ada01",
+              "spanId": "a720f99bffffffff",
+              "parentSpanId": "45e08ee007ee2000",
+              "name": "WEBHOOK_ACCEPTED_ASYNC",
+              "kind": 1,
+              "startTimeUnixNano": "1792578854708000000",
+              "endTimeUnixNano": "1792578856709000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_ACCEPTED_ASYNC"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processing"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 2001.97
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "21fd4370ffffffffffffffff0734df12",
+              "spanId": "e746f190ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RECEIVED (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792576216900000000",
+              "endTimeUnixNano": "1792576216950000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RECEIVED"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "Open Lead"
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "1a03f3c8ffffffffffffffff8c3f30a1",
+              "spanId": "0a685a98ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_ACCEPTED_ASYNC (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792576218907000000",
+              "endTimeUnixNano": "1792576220912000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_ACCEPTED_ASYNC"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processing"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 2005.6
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "edb20e28ffffffffffffffff82e02bde",
+              "spanId": "98f01ea05b492b00",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RESULT (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792576245971000000",
+              "endTimeUnixNano": "1792576275042000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RESULT"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processed"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 29071.61
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "gen_ai.run_id",
+                  "value": {
+                    "stringValue": "resp_06a8587f169db898006ad88af367c881958a3950d5be429e4c"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": "Solicitação comercial classificada como 'Lead'.; Ferramenta Jira executada: query_knowledge_base.; Ação Jira executada: Mensagem para o Cliente (Transição 36)."
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "13826c98ffffffffffffffff89c62831",
+              "spanId": "3d092590ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RECEIVED (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792576266740000000",
+              "endTimeUnixNano": "1792576266790000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RECEIVED"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "Open Lead"
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "1f6357a0ffffffffffffffff0a7536f1",
+              "spanId": "f0295a605b492b00",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RESULT (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792576267317000000",
+              "endTimeUnixNano": "1792576267894000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RESULT"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processed"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 577.89
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": "Evento ignorado: o comentário mais recente foi publicado pelo agente."
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "a9e76d8cffffffffffffffffc8d67e9a",
+              "spanId": "885a80f4ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RECEIVED (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792577681013000000",
+              "endTimeUnixNano": "1792577681063000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RECEIVED"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "Open Lead"
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "0aee7550ffffffffffffffff0557eea0",
+              "spanId": "080a2700ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_ACCEPTED_ASYNC (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792577683016000000",
+              "endTimeUnixNano": "1792577685020000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_ACCEPTED_ASYNC"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processing"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 2004.09
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "e5d67610ffffffffffffffff01676d5e",
+              "spanId": "0de999d0ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RESULT (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792577699253000000",
+              "endTimeUnixNano": "1792577717493000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RESULT"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processed"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 18240.96
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "gen_ai.run_id",
+                  "value": {
+                    "stringValue": "resp_08298c55b9a66152006ad890a0b7b48190a6a2f31a87573816"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": "Solicitação comercial classificada como 'Lead'.; Ação Jira executada: Mensagem para o Cliente (Transição 36)."
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "b0f48960ffffffffffffffff06984f0b",
+              "spanId": "62c33090ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RECEIVED (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792577952572000000",
+              "endTimeUnixNano": "1792577952622000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RECEIVED"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "Open Lead"
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "f5f5684effffffffffffffffe4865f5f",
+              "spanId": "13cd8e98ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_ACCEPTED_ASYNC (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792577954574000000",
+              "endTimeUnixNano": "1792577956575000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_ACCEPTED_ASYNC"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processing"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 2001.62
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "b4ee8e80ffffffffffffffff08e8ee4b",
+              "spanId": "e20a7734ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RESULT (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792577979928000000",
+              "endTimeUnixNano": "1792578007283000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RESULT"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processed"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 27355.61
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "gen_ai.run_id",
+                  "value": {
+                    "stringValue": "resp_0831b71c0a65e14a006ad891b8d0c48196a076fca68b4d219f"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": "Solicitação comercial classificada como 'Lead'.; Ferramenta Jira executada: start_lead_work.; Ação Jira executada: Mensagem para o Cliente (Transição 36)."
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "0ed547c8ffffffffffffffff8c745de0",
+              "spanId": "e134791cffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RECEIVED (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792578852707000000",
+              "endTimeUnixNano": "1792578852757000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RECEIVED"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "Open Lead"
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "b5dd59080e07f800008f70e08095dd5b",
+              "spanId": "2dfbca34ffffffff",
+              "parentSpanId": "",
+              "name": "WEBHOOK_ACCEPTED_ASYNC (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792578854708000000",
+              "endTimeUnixNano": "1792578856709000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_ACCEPTED_ASYNC"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processing"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 2001.97
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": ""
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            },
+            {
+              "traceId": "638c4392ffffffffffffffff2934c836",
+              "spanId": "ddaf58305b492b00",
+              "parentSpanId": "",
+              "name": "WEBHOOK_RESULT (OP-8989)",
+              "kind": 1,
+              "startTimeUnixNano": "1792578881408000000",
+              "endTimeUnixNano": "1792578910110000000",
+              "attributes": [
+                {
+                  "key": "jira.issue_key",
+                  "value": {
+                    "stringValue": "OP-8989"
+                  }
+                },
+                {
+                  "key": "event.tag",
+                  "value": {
+                    "stringValue": "WEBHOOK_RESULT"
+                  }
+                },
+                {
+                  "key": "jira.status",
+                  "value": {
+                    "stringValue": "processed"
+                  }
+                },
+                {
+                  "key": "http.status_code",
+                  "value": {
+                    "intValue": "200"
+                  }
+                },
+                {
+                  "key": "duration_ms",
+                  "value": {
+                    "doubleValue": 28702.26
+                  }
+                },
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "azure_function"
+                  }
+                },
+                {
+                  "key": "gen_ai.run_id",
+                  "value": {
+                    "stringValue": "resp_0e48712d61442a57006ad8953bf9ac8190b04e96994974deec"
+                  }
+                },
+                {
+                  "key": "actions_taken",
+                  "value": {
+                    "stringValue": "Solicitação comercial classificada como 'Proposta'.; Ferramenta Jira executada: start_lead_work.; Ferramenta Jira executada: generate_new_proposal.; Ação Jira executada: Mensagem para o Cliente (Transição 36)."
+                  }
+                }
+              ],
+              "status": {
+                "code": 1
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
