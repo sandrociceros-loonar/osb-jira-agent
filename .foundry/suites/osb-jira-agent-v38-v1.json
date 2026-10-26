@@ -1,0 +1,48 @@
+{
+  "name": "osb-jira-agent-v38",
+  "version": "1",
+  "display_name": "osb-jira-agent-v38",
+  "description": "Auto-generated evaluation suite for osb-jira-agent-v38",
+  "subtype": "default",
+  "dataset": {
+    "name": "osb-jira-agent-v38-data",
+    "version": "1.0"
+  },
+  "testing_criteria": [
+    {
+      "type": "azure_ai_evaluator",
+      "id": "",
+      "name": "osb-jira-agent-v38-evaluator",
+      "evaluator_name": "osb-jira-agent-v38-evaluator",
+      "evaluator_version": "",
+      "initialization_parameters": {
+        "deployment_name": "gpt-5"
+      },
+      "data_mapping": {
+        "query": "{{item.query}}",
+        "response": "{{sample.output_items}}"
+      }
+    }
+  ],
+  "target": {
+    "type": "azure_ai_agent",
+    "name": "osb-jira-agent",
+    "version": null,
+    "tool_descriptions": []
+  },
+  "input_messages": {
+    "type": "template",
+    "template": [
+      {
+        "role": "user",
+        "content": "{{item.query}}"
+      }
+    ]
+  },
+  "system_data": {
+    "createdAt": "10/26/2026 07:51:48 +00:00",
+    "createdBy": "Sandro Cicero",
+    "modifiedAt": "10/26/2026 08:08:47 +00:00",
+    "modifiedBy": ""
+  }
+}

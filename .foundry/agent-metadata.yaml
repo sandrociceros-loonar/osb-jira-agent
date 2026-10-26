@@ -1,0 +1,26 @@
+defaultEnvironment: osb-jira-agent
+environments:
+  osb-jira-agent:
+    azd:
+      environmentName: osb-jira-agent
+      service: osb-jira-agent
+    evaluationSuites:
+      - id: osb-jira-agent-v38
+        suiteName: osb-jira-agent-v38
+        suiteVersion: "1"
+        generationJobId: suitegen-osb-jira-agent-v38-v1-50b04ded
+        generationSource: synthetic
+        suiteFile: .foundry/suites/osb-jira-agent-v38-v1.json
+        dataset: osb-jira-agent-v38-data
+        datasetVersion: "1.0"
+        datasetFile: .foundry/datasets/osb-jira-agent-osb-jira-agent-v38-data-v1.0.ref.json
+        datasetUri: https://osbjira-ai-dx6bn3.services.ai.azure.com/api/projects/osbjira-proj-development/data/osb-jira-agent-v38-data/versions/1.0
+        evaluators:
+          - name: osb-jira-agent-v38-evaluator
+            version: "1"
+            threshold: 0.5
+            definitionFile: .foundry/evaluators/osb-jira-agent-v38-evaluator-v1.json
+        tags:
+          tier: smoke
+          purpose: baseline
+          stage: generated

@@ -1,0 +1,136 @@
+{
+  "id": "azureai://accounts/osbjira-ai-dx6bn3/projects/osbjira-proj-development/evaluators/osb-jira-agent-v38-evaluator/versions/1",
+  "name": "osb-jira-agent-v38-evaluator",
+  "display_name": "osb-jira-agent-v38-evaluator",
+  "metadata": {
+    "generation_job_id": "evaluatorgen-osb-jira-agent-v38-evaluator-v1-846c34b4",
+    "generation_status": "succeeded",
+    "generation_agent_source": "osb-jira-agent"
+  },
+  "description": "",
+  "version": "1",
+  "created_by": "Sandro Cicero",
+  "created_at": "2026-10-26T07:51:49.3145142+00:00",
+  "modified_at": "2026-10-26T07:54:03.7899009+00:00",
+  "categories": [
+    "quality",
+    "agents"
+  ],
+  "supported_evaluation_levels": [
+    "turn",
+    "conversation"
+  ],
+  "evaluator_type": "custom",
+  "definition": {
+    "type": "rubric",
+    "dimensions": [
+      {
+        "id": "verified_workflow_outcome",
+        "description": "Final outcomes are correct and grounded in observable tool results: transitions are selected from jira.listTransitions by transitionId, jira.transitionIssue succeeds, and jira.getIssue confirms status/resolution; creations/updates succeed with expected end states; no claims of change without matching tool evidence.",
+        "weight": 9,
+        "always_applicable": false
+      },
+      {
+        "id": "tool_planning_and_sequencing",
+        "description": "Tool calls are planned and ordered correctly: discovery precedes action (e.g., listTransitions before transition), appropriate use of search/get for planning, minimal yet sufficient steps, and avoidance of skipped or redundant steps across heterogeneous workflows.",
+        "weight": 5,
+        "always_applicable": false
+      },
+      {
+        "id": "parameter_integrity_and_hygiene",
+        "description": "Parameters are precise and valid: correct identity forms (assigneeAccountId vs display name), valid enums (priority, resolution), correct project/issue keys, use of transitionId rather than status names, and updates limited to intended fields.",
+        "weight": 5,
+        "always_applicable": false
+      },
+      {
+        "id": "intent_fidelity_and_scope_control",
+        "description": "The agent faithfully captures user intent, clarifies underspecified requests, maps natural language to exact tool parameters, scopes bulk actions appropriately with filters/limits (e.g., projectKey, status, labels, maxResults), and obtains explicit confirmation before executing destructive or bulk operations.",
+        "weight": 4,
+        "always_applicable": false
+      },
+      {
+        "id": "safety_and_provenance_compliance",
+        "description": "Strict adherence to synthetic-only and data-provenance requirements: no production identifiers are used or echoed; potential PII or real-looking IDs are redacted; when inputs appear real, the assistant states synthetic/provenance safeguards and refuses to operate on production data.",
+        "weight": 6,
+        "always_applicable": false
+      },
+      {
+        "id": "error_handling_and_recovery",
+        "description": "Errors from tools (e.g., permission_denied, not_found, invalid_transition, validation_error) are surfaced with actionable explanations; the agent retries appropriately or takes alternative paths, requests clarification when needed, and verifies post-remediation state.",
+        "weight": 4,
+        "always_applicable": false
+      },
+      {
+        "id": "reporting_clarity_and_traceability",
+        "description": "The assistant's summaries clearly enumerate actions taken and outcomes with concrete identifiers (issueKey(s), final status/resolution), enabling auditors to verify results from the transcript without ambiguity.",
+        "weight": 2,
+        "always_applicable": false
+      },
+      {
+        "id": "general_quality",
+        "description": "Other important quality factors not covered by listed criteria.",
+        "weight": 5,
+        "always_applicable": true
+      }
+    ],
+    "pass_threshold": 0.5,
+    "init_parameters": {
+      "required": [
+        "model"
+      ],
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string",
+          "description": "Model deployment name for the LLM judge"
+        }
+      }
+    },
+    "metrics": {
+      "osb-jira-agent-v38-evaluator": {
+        "type": "continuous",
+        "desirable_direction": "increase",
+        "min_value": 0.0,
+        "max_value": 1.0,
+        "is_primary": true
+      }
+    },
+    "data_schema": {
+      "required": [],
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "User query (turn mode)"
+        },
+        "response": {
+          "type": "string",
+          "description": "Agent response (turn mode)"
+        },
+        "messages": {
+          "type": "array",
+          "description": "Conversation messages (conversation mode)"
+        },
+        "tool_definitions": {
+          "type": "array",
+          "description": "Tool definitions available to the agent"
+        }
+      }
+    },
+    "prompt_text": ""
+  },
+  "generation_artifacts": {
+    "dataset": {
+      "name": "sys-evalartifacts-osb-jira-agent-v38-evaluator",
+      "version": "v1-846c34b4"
+    },
+    "kinds": [
+      "spec",
+      "tools"
+    ]
+  },
+  "generation_job_id": "evaluatorgen-osb-jira-agent-v38-evaluator-v1-846c34b4",
+  "warnings": [
+    "input_quality"
+  ]
+}

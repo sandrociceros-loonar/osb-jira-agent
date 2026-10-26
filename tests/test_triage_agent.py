@@ -151,6 +151,16 @@ def test_commercial_prompt_uses_crm_purpose_and_safe_defaults():
     assert "Proposta de renovação" in user_prompt
 
 
+def test_commercial_prompt_only_creates_leads_on_explicit_request():
+    assert "`create_lead` somente se solicitado explicitamente" in TRIAGE_SYSTEM_PROMPT
+    assert "não crie outro lead quando o pedido for consultar ou atualizar" in (
+        TRIAGE_SYSTEM_PROMPT
+    )
+    assert "Só declare a criação concluída se a ferramenta retornar sucesso" in (
+        TRIAGE_SYSTEM_PROMPT
+    )
+
+
 def test_purchasing_prompt_maps_assets_product_id_to_jira_assets_field():
     purchasing_tool = next(tool for tool in JIRA_TOOLS if tool.name == "send_item_to_purchasing")
     product_id_schema = purchasing_tool.function_schema()["parameters"]["properties"][
